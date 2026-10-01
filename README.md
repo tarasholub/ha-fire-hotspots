@@ -95,7 +95,14 @@ Assistant: лічильники, сенсори «пожежа в регіоні
 - Окуповані території України (Крим, частини Донецької, Луганської,
   Запорізької, Херсонської областей) рахуються в межах України.
 
-## Приклад автоматизації
+## Сповіщення про нові осередки
+
+Готовий blueprint — сповіщення на телефон про нові осередки з фільтром
+відстані від дому:
+
+[![Імпортувати blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fnew_hotspots_notify.yaml)
+
+Або власна автоматизація:
 
 ```yaml
 automation:
@@ -115,6 +122,17 @@ automation:
           message: >
             Нових осередків: {{ trigger.to_state.attributes.count }},
             найближчий за {{ trigger.to_state.attributes.detections[0].distance }} км
+```
+
+## Осередки на мапі
+
+Увімкніть «Показувати на мапі» в налаштуваннях і додайте map-картку:
+
+```yaml
+type: map
+geo_location_sources:
+  - fire_hotspots
+auto_fit: true
 ```
 
 ## Підтримувані країни

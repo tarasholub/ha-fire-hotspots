@@ -47,6 +47,22 @@ Options: regions, time window (1–96 h, default 24), minimum confidence
 (default low), satellite sources (default all four), update interval
 (10–180 min, default 30), show on map (default off).
 
+## Automations and map
+
+A ready-made blueprint sends a mobile notification about new hotspots with an
+optional distance-from-home filter:
+
+[![Import blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fnew_hotspots_notify.yaml)
+
+With "Show on map" enabled, a map card shows every hotspot:
+
+```yaml
+type: map
+geo_location_sources:
+  - fire_hotspots
+auto_fit: true
+```
+
 ## Counting
 
 Polls the FIRMS Area API every 30 minutes (configurable), one request per
