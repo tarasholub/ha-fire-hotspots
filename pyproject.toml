@@ -1,0 +1,51 @@
+[project]
+name = "ha-fire-hotspots"
+version = "0.0.0"
+description = "Home Assistant custom component: Fire Hotspots (NASA FIRMS data)"
+readme = "README.md"
+requires-python = ">=3.14.2"
+authors = [{ name = "Taras Holub", email = "holub.taras@gmail.com" }]
+dependencies = ["homeassistant==2026.9.4"]
+
+[dependency-groups]
+dev = [
+  "pre-commit>=4.6.1",
+  "ruff>=0.16.9",
+  "pytest>=8.3.0",
+  "pytest-homeassistant-custom-component==0.13.367",
+]
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+  "D203",   # no-blank-line-before-class (incompatible with formatter)
+  "D212",   # multi-line-summary-first-line (incompatible with formatter)
+  "COM812", # incompatible with formatter
+  "CPY001", # Project files do not require copyright headers
+  "ISC001", # incompatible with formatter
+  "FIX002", # Line contains TODO, consider resolving an issue
+  "TD003",  # Missing issue link on the line following this TODO
+  "RUF001", # Ukrainian (Cyrillic) strings are intended
+  "RUF002", # ...and in docstrings
+  "RUF003", # ...and in comments
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004", "SLF001", "ARG001", "E501", "PLR0913", "PLR0917"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
