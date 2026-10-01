@@ -51,8 +51,10 @@ _STATIC_REGISTERED = f"{DOMAIN}_static_registered"
 async def async_setup_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> bool:
     """Set up Fire Hotspots from a config entry."""
     if hass.config.country in EXCLUDED_COUNTRIES:
-        msg = "Not available in aggressor states waging war against Ukraine"
-        raise ConfigEntryError(msg)
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key="unsupported_country",
+        )
     if not hass.data.get(_STATIC_REGISTERED):
         # Set the flag before awaiting: parallel entry setups must not
         # register the same path twice.

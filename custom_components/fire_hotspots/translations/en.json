@@ -207,5 +207,10 @@
       "title": "NASA FIRMS rate limit reached",
       "description": "FIRMS temporarily rejected requests for {country} because the MAP_KEY hit its rate limit. Updates resume automatically; consider a longer update interval or fewer satellite sources if this repeats."
     }
+  },
+  "exceptions": {
+    "unsupported_country": {
+      "message": "Not available on instances located in russia or belarus — aggressor states waging war against Ukraine."
+    }
   }
 }

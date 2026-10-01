@@ -374,11 +374,7 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
             new_id = point_zone_id(name)
             # Entity ids are built from the slug, so names that only differ
             # in script or punctuation ("Дача" vs "Dacha") still collide.
-            if (
-                not name
-                or new_id == point_zone_id("")
-                or any(point_zone_id(p["name"]) == new_id for p in points)
-            ):
+            if not name or any(point_zone_id(p["name"]) == new_id for p in points):
                 errors[CONF_POINT_NAME] = "duplicate_point"
             else:
                 radius_km = min(
