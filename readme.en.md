@@ -18,8 +18,9 @@
 
 > [!NOTE]
 > Satellite fire hotspots for a country and its regions in Home Assistant:
-> counters, "fire in region" sensors, distance to the nearest hotspot, events
-> for automations and optional map markers.
+> counters, "fire in region" sensors, watch zones and map points with a
+> radius, distance to the nearest hotspot, events for automations and
+> optional map markers.
 > Data: [NASA FIRMS][firms] (VIIRS and MODIS). Boundaries:
 > [geoBoundaries][geoboundaries].
 
@@ -45,7 +46,7 @@ Per country:
 - `geo_location` — one map marker per hotspot (off by default).
 - `binary_sensor` (diagnostic) **Stale data** — problem when satellites have not delivered for a while; per-source timestamps in attributes.
 
-Per watched zone (optional): **Hotspots near _zone_** (counts within the
+Per watched zone or map point (optional): **Hotspots near _zone_** (counts within the
 radius, regardless of regions and country borders), **Fire near _zone_**
 (safety) and **Nearest hotspot: _zone_** (km from the zone centre). New
 hotspots near zones fire a separate `detected_near_zone` event type.
@@ -104,7 +105,9 @@ interval (10–180 min, default 30), watch zones with a shared radius
 The **Configure** button opens a menu: "Select regions", "Add a point on the
 map", "Remove watch points" and "Settings". A **watch point** is a name plus
 a draggable marker with a radius circle (each point has its own radius); it
-gets the same entities and events as a zone.
+gets the same entities and events as a zone:
+
+<img src="./media/add-point.png" alt="Adding a watch point" width="400">
 
 The time window, confidence, interval and map toggle are also exposed as
 configuration entities on the device page:
