@@ -106,7 +106,8 @@ async def test_entities(
     assert last.state == kyiv.attributes["latest_acquired"]
 
     usage = hass.states.get(_entity_id(hass, "usage"))
-    assert usage.state == "16"
+    assert usage.state == "16 / 5000"
+    assert usage.attributes["used"] == 16
     assert usage.attributes["limit"] == 5000
     assert usage.attributes["interval"] == "10 minutes"
 

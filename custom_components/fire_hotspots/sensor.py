@@ -190,7 +190,6 @@ class KeyUsageSensor(FirmsEntity, SensorEntity):
 
     _attr_translation_key = "key_usage"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator: FirmsCoordinator) -> None:
         """Initialize the sensor."""
@@ -198,18 +197,22 @@ class KeyUsageSensor(FirmsEntity, SensorEntity):
         super().__init__(coordinator, f"{entry_id}_{KEY_USAGE}")
 
     @property
-    def native_value(self) -> int | None:
-        """Transactions used; unknown while the status endpoint is down."""
+    def native_value(self) -> str | None:
+        """Used out of limit, e.g. "16 / 5000"; unknown while status is down."""
         status = self.coordinator.data.key_status
-        return status.used if status else None
+        return f"{status.used} / {status.limit}" if status else None
 
     @property
     def extra_state_attributes(self) -> dict[str, int | str]:
-        """Limit and window of the rate limit."""
+        """Numeric parts and the window of the rate limit."""
         status = self.coordinator.data.key_status
         if status is None:
             return {}
-        return {"limit": status.limit, "interval": status.interval}
+        return {
+            "used": status.used,
+            "limit": status.limit,
+            "interval": status.interval,
+        }
 
 
 class NearestHotspotSensor(FirmsEntity, SensorEntity):
