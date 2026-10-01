@@ -1,0 +1,69 @@
+blueprint:
+  name: "Fire Hotspots: notify about new hotspots"
+  description: >-
+    Send a mobile notification when new fire hotspots are detected,
+    optionally only when the nearest one is within a given distance
+    from Home Assistant home.
+  domain: automation
+  source_url: https://github.com/tarasholub/ha-fire-hotspots/blob/main/blueprints/automation/fire_hotspots/new_hotspots_notify.yaml
+  input:
+    event_entity:
+      name: New hotspots event
+      description: The "New hotspots" event entity of a Fire Hotspots entry.
+      selector:
+        entity:
+          filter:
+            - integration: fire_hotspots
+              domain: event
+    max_distance:
+      name: Maximum distance
+      description: >-
+        Notify only when the nearest new hotspot is within this distance
+        from home. 0 notifies about every new hotspot. Requires a home
+        location in Home Assistant.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 1000
+          step: 1
+          unit_of_measurement: km
+          mode: box
+    notify_device:
+      name: Device to notify
+      description: A device with the Home Assistant Companion app.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+
+mode: queued
+max: 10
+
+triggers:
+  - trigger: state
+    entity_id: !input event_entity
+    not_to:
+      - unknown
+      - unavailable
+
+variables:
+  max_distance: !input max_distance
+  nearest: >-
+    {{ trigger.to_state.attributes.detections
+       | map(attribute='distance') | reject('none') | list | first | default(none) }}
+
+conditions:
+  - condition: template
+    value_template: >-
+      {{ max_distance == 0
+         or (nearest is not none and nearest <= max_distance) }}
+
+actions:
+  - domain: mobile_app
+    type: notify
+    device_id: !input notify_device
+    title: "🔥 {{ trigger.to_state.attributes.region_name or 'New hotspots' }}"
+    message: >-
+      New hotspots: {{ trigger.to_state.attributes.count }}{% if nearest is not none %},
+      nearest {{ nearest }} km from home{% endif %}.
