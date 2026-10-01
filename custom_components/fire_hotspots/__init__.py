@@ -33,7 +33,10 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
     Platform.EVENT,
     Platform.GEO_LOCATION,
+    Platform.NUMBER,
+    Platform.SELECT,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 

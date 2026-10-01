@@ -35,6 +35,24 @@
       "new_hotspots": {
         "default": "mdi:fire-circle"
       }
+    },
+    "number": {
+      "update_interval": {
+        "default": "mdi:update"
+      },
+      "time_window": {
+        "default": "mdi:timelapse"
+      }
+    },
+    "select": {
+      "min_confidence": {
+        "default": "mdi:filter"
+      }
+    },
+    "switch": {
+      "show_on_map": {
+        "default": "mdi:map-marker-multiple"
+      }
     }
   }
 }

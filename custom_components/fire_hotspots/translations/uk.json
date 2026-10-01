@@ -131,6 +131,29 @@
           }
         }
       }
+    },
+    "number": {
+      "update_interval": {
+        "name": "Інтервал оновлення"
+      },
+      "time_window": {
+        "name": "Часове вікно"
+      }
+    },
+    "select": {
+      "min_confidence": {
+        "name": "Мінімальна достовірність",
+        "state": {
+          "low": "Низька",
+          "nominal": "Номінальна",
+          "high": "Висока"
+        }
+      }
+    },
+    "switch": {
+      "show_on_map": {
+        "name": "Показувати осередки на мапі"
+      }
     }
   },
   "issues": {
