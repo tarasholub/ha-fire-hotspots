@@ -5,11 +5,13 @@
     "@tarasholub"
   ],
   "config_flow": true,
-  "dependencies": ["http"],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/tarasholub/ha-fire-hotspots",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/tarasholub/ha-fire-hotspots/issues",
   "requirements": [],
-  "version": "0.2.1"
+  "version": "0.3.0"
 }
