@@ -241,20 +241,12 @@ async def test_options_flow(
     assert result["type"] is FlowResultType.FORM
 
     options = {
-        CONF_REGIONS: [],
         CONF_HOURS: 12,
         CONF_MIN_CONFIDENCE: "nominal",
-        CONF_SOURCES: ["MODIS_NRT"],
+        CONF_SOURCES: [],
         CONF_UPDATE_INTERVAL: 60,
         CONF_SHOW_ON_MAP: True,
     }
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], options
-    )
-    assert result["errors"] == {CONF_REGIONS: "no_regions"}
-
-    options[CONF_REGIONS] = ["UA-46"]
-    options[CONF_SOURCES] = []
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], options
     )
@@ -265,9 +257,37 @@ async def test_options_flow(
         result["flow_id"], options
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert config_entry.options[CONF_REGIONS] == ["UA-46"]
+    # regions are managed in their own step and survive a settings save
+    assert config_entry.options[CONF_REGIONS] == ["UA-30", "UA-65", WHOLE_COUNTRY]
     assert config_entry.options[CONF_SHOW_ON_MAP] is True
     assert config_entry.options[CONF_UPDATE_INTERVAL] == 60
+
+
+async def test_options_regions_step(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_setup: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """The regions step validates and saves without touching other options."""
+    config_entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "regions"}
+    )
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_REGIONS: []}
+    )
+    assert result["errors"] == {CONF_REGIONS: "no_regions"}
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_REGIONS: ["UA-46"]}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert config_entry.options[CONF_REGIONS] == ["UA-46"]
+    assert config_entry.options[CONF_MIN_CONFIDENCE] == "low"  # untouched
 
 
 async def test_second_country_reuses_known_key(
@@ -310,7 +330,7 @@ async def test_options_flow_all_regions_add_whole_country(
     config_entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {"next_step_id": "settings"}
+        result["flow_id"], {"next_step_id": "regions"}
     )
     selector = result["data_schema"].schema[CONF_REGIONS].config
     all_regions = [
@@ -319,15 +339,7 @@ async def test_options_flow_all_regions_add_whole_country(
     assert len(all_regions) == 27
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        {
-            CONF_REGIONS: all_regions,
-            CONF_HOURS: 24,
-            CONF_MIN_CONFIDENCE: "low",
-            CONF_SOURCES: ["MODIS_NRT"],
-            CONF_UPDATE_INTERVAL: 30,
-            CONF_SHOW_ON_MAP: False,
-        },
+        result["flow_id"], {CONF_REGIONS: all_regions}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     regions = config_entry.options[CONF_REGIONS]
@@ -346,7 +358,7 @@ async def test_options_flow_without_boundaries(
     ):
         result = await hass.config_entries.options.async_init(config_entry.entry_id)
         result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"next_step_id": "settings"}
+            result["flow_id"], {"next_step_id": "regions"}
         )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "boundaries_unavailable"

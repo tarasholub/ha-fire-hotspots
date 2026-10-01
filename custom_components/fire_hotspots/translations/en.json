@@ -49,7 +49,6 @@
       "settings": {
         "title": "Fire Hotspots settings",
         "data": {
-          "regions": "Regions",
           "hours": "Time window",
           "min_confidence": "Minimum confidence",
           "sources": "Satellite sources",
@@ -59,7 +58,6 @@
           "show_on_map": "Show hotspots on the map"
         },
         "data_description": {
-          "regions": "Picking \"Whole country\" selects every region; picking every region adds \"Whole country\".",
           "hours": "Count detections acquired within this many hours.",
           "min_confidence": "Ignore detections below this level. \"Low\" counts everything, like SaveEcoBot.",
           "update_interval": "How often to poll NASA FIRMS, in minutes. New data arrives a few times a day per satellite.",
@@ -71,9 +69,10 @@
       "init": {
         "title": "Fire Hotspots",
         "menu_options": {
-          "settings": "Settings",
-          "add_point": "Add a watch point",
-          "remove_points": "Remove watch points"
+          "regions": "Select regions",
+          "add_point": "Add a point on the map",
+          "remove_points": "Remove watch points",
+          "settings": "Settings"
         }
       },
       "add_point": {
@@ -91,6 +90,13 @@
         "title": "Remove watch points",
         "data": {
           "points": "Points"
+        }
+      },
+      "regions": {
+        "title": "Select regions",
+        "description": "Each choice gets its own counter and \"fire\" sensor. \"Whole country\" selects every region.",
+        "data": {
+          "regions": "Regions"
         }
       }
     },

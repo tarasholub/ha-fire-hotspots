@@ -312,12 +312,52 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Choose between the settings form and watch point management."""
+        """Choose between regions, watch points and the settings form."""
         del user_input
-        menu = ["settings", "add_point"]
+        menu = ["regions", "add_point"]
         if self.config_entry.options.get(CONF_POINTS):
             menu.append("remove_points")
+        menu.append("settings")
         return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_regions(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Pick monitored regions from the country's list."""
+        try:
+            boundaries = await async_get_boundaries(
+                self.hass, self.config_entry.data[CONF_COUNTRY]
+            )
+        except BoundariesError:
+            return self.async_abort(reason="boundaries_unavailable")
+
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            if not user_input.get(CONF_REGIONS):
+                errors[CONF_REGIONS] = "no_regions"
+            else:
+                return self.async_create_entry(
+                    data={
+                        **self.config_entry.options,
+                        CONF_REGIONS: normalize_regions(
+                            user_input[CONF_REGIONS], boundaries
+                        ),
+                    }
+                )
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_REGIONS): regions_selector(
+                    boundaries, self.hass.config.language
+                )
+            }
+        )
+        return self.async_show_form(
+            step_id="regions",
+            data_schema=self.add_suggested_values_to_schema(
+                schema, user_input or dict(self.config_entry.options)
+            ),
+            errors=errors,
+        )
 
     async def async_step_add_point(
         self, user_input: dict[str, Any] | None = None
@@ -395,31 +435,18 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
     async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Manage the options."""
-        try:
-            boundaries = await async_get_boundaries(
-                self.hass, self.config_entry.data[CONF_COUNTRY]
-            )
-        except BoundariesError:
-            return self.async_abort(reason="boundaries_unavailable")
-
+        """Manage the options other than regions and watch points."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            if not user_input.get(CONF_REGIONS):
-                errors[CONF_REGIONS] = "no_regions"
-            elif not user_input.get(CONF_SOURCES):
+            if not user_input.get(CONF_SOURCES):
                 errors[CONF_SOURCES] = "no_sources"
             else:
-                user_input[CONF_REGIONS] = normalize_regions(
-                    user_input[CONF_REGIONS], boundaries
-                )
-                user_input[CONF_POINTS] = self.config_entry.options.get(CONF_POINTS, [])
+                options = self.config_entry.options
+                user_input[CONF_REGIONS] = options.get(CONF_REGIONS, [])
+                user_input[CONF_POINTS] = options.get(CONF_POINTS, [])
                 return self.async_create_entry(data=user_input)
         schema = vol.Schema(
             {
-                vol.Required(CONF_REGIONS): regions_selector(
-                    boundaries, self.hass.config.language
-                ),
                 vol.Required(CONF_HOURS): NumberSelector(
                     NumberSelectorConfig(
                         min=MIN_HOURS,
