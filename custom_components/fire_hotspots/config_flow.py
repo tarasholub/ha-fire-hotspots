@@ -145,10 +145,18 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
         self._download: asyncio.Task[CountryBoundaries] | None = None
         self._download_error: str | None = None
 
+    def _known_map_key(self) -> str | None:
+        """MAP_KEY of an already configured entry, if any."""
+        for entry in self._async_current_entries(include_ignore=False):
+            if key := entry.data.get(CONF_MAP_KEY):
+                return key
+        return None
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Ask for MAP_KEY and country."""
+        """Ask for MAP_KEY and country; a known key is reused when omitted."""
+        known_key = self._known_map_key()
         errors: dict[str, str] = {}
         if self._download_error:
             errors["base"] = self._download_error
@@ -157,7 +165,7 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
             country = user_input[CONF_COUNTRY]
             await self.async_set_unique_id(country)
             self._abort_if_unique_id_configured()
-            map_key = user_input[CONF_MAP_KEY].strip()
+            map_key = user_input.get(CONF_MAP_KEY, "").strip() or known_key or ""
             if error := await validate_map_key(self.hass, map_key):
                 errors["base"] = error
             else:
@@ -168,9 +176,12 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
         suggested = user_input or {
             CONF_COUNTRY: home if home in ALLOWED_COUNTRIES else None
         }
+        key_field = (
+            vol.Optional(CONF_MAP_KEY) if known_key else vol.Required(CONF_MAP_KEY)
+        )
         schema = vol.Schema(
             {
-                vol.Required(CONF_MAP_KEY): MAP_KEY_SELECTOR,
+                key_field: MAP_KEY_SELECTOR,
                 vol.Required(CONF_COUNTRY): CountrySelector(
                     CountrySelectorConfig(countries=ALLOWED_COUNTRIES)
                 ),

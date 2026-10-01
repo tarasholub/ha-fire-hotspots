@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import shutil
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
 import pytest
+import voluptuous as vol
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.data_entry_flow import FlowResultType
 
@@ -261,6 +263,36 @@ async def test_options_flow(
     assert config_entry.options[CONF_REGIONS] == ["UA-46"]
     assert config_entry.options[CONF_SHOW_ON_MAP] is True
     assert config_entry.options[CONF_UPDATE_INTERVAL] == 60
+
+
+async def test_second_country_reuses_known_key(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+    mock_setup: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """With an entry configured, the key field is optional and reused."""
+    shutil.copy(boundaries_cache / "UKR.json", boundaries_cache / "POL.json")
+    config_entry.add_to_hass(hass)
+
+    result = await _start(hass)
+    key_marker = next(
+        marker for marker in result["data_schema"].schema if marker == CONF_MAP_KEY
+    )
+    assert isinstance(key_marker, vol.Optional)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_COUNTRY: "PL"}
+    )
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    await hass.async_block_till_done()
+    result = await hass.config_entries.flow.async_configure(result["flow_id"])
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_REGIONS: [WHOLE_COUNTRY]}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_MAP_KEY] == "test-key"  # reused from the UA entry
 
 
 async def test_options_flow_all_regions_add_whole_country(

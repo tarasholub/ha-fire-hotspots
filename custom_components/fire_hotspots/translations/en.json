@@ -9,7 +9,7 @@
           "country": "Country"
         },
         "data_description": {
-          "map_key": "Free NASA FIRMS key. Each update uses one transaction per satellite source.",
+          "map_key": "Free NASA FIRMS key. Each update uses one transaction per satellite source. If another country is already set up, leave empty to reuse its key.",
           "country": "Boundaries for this country are downloaded once and cached."
         }
       },

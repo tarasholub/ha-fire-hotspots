@@ -88,7 +88,9 @@ Get a free [MAP_KEY][map-key] and select the button below:
 
 Enter the MAP_KEY and pick a country. Boundaries are downloaded once (up to a
 minute for large countries) and cached in `.storage/fire_hotspots/`. Then tick
-regions and/or "Whole country". Each country is a separate integration entry.
+regions and/or "Whole country". Each country is a separate integration entry;
+the MAP_KEY is entered once — adding another country reuses it automatically
+(you can still enter a different one).
 
 <img src="./media/options-flow.png" alt="Region selection" width="500">
 
