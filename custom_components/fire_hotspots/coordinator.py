@@ -31,12 +31,15 @@ from .const import (
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
     CONF_UPDATE_INTERVAL,
+    CONF_ZONE_RADIUS,
+    CONF_ZONES,
     CONFIDENCE_LEVELS,
     DEFAULT_HOURS,
     DEFAULT_MIN_CONFIDENCE,
     DEFAULT_SHOW_ON_MAP,
     DEFAULT_SOURCES,
     DEFAULT_UPDATE_MINUTES,
+    DEFAULT_ZONE_RADIUS_KM,
     DOMAIN,
     LOGGER,
     WHOLE_COUNTRY,
@@ -72,6 +75,8 @@ class Settings:
     sources: list[str]
     show_on_map: bool
     update_minutes: int
+    zones: list[str]
+    zone_radius: float  # km
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> Settings:
@@ -85,6 +90,8 @@ class Settings:
             update_minutes=int(
                 options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_MINUTES)
             ),
+            zones=list(options.get(CONF_ZONES, [])),
+            zone_radius=float(options.get(CONF_ZONE_RADIUS, DEFAULT_ZONE_RADIUS_KM)),
         )
 
     @property
@@ -112,6 +119,50 @@ class Detection:
         return self.hotspot.id
 
 
+@dataclass(frozen=True, slots=True)
+class WatchZone:
+    """A Home Assistant zone watched within a radius."""
+
+    zone_id: str  # zone entity id
+    name: str
+    latitude: float
+    longitude: float
+    radius: float  # km
+
+
+@dataclass(frozen=True, slots=True)
+class ZoneDetection:
+    """Hotspot within a watched zone's radius."""
+
+    hotspot: Hotspot
+    distance: float  # km from the zone centre
+
+    @property
+    def id(self) -> str:
+        """Stable identifier."""
+        return self.hotspot.id
+
+
+@dataclass(slots=True)
+class ZoneData:
+    """Hotspots around one watched zone."""
+
+    detections: list[ZoneDetection] = field(default_factory=list)
+    new: list[ZoneDetection] = field(default_factory=list)
+
+    @property
+    def count(self) -> int:
+        """Number of hotspots within the radius."""
+        return len(self.detections)
+
+    @property
+    def nearest(self) -> float | None:
+        """Distance to the nearest hotspot, km."""
+        if not self.detections:
+            return None
+        return min(d.distance for d in self.detections)
+
+
 @dataclass(slots=True)
 class FirmsData:
     """Processed coordinator data."""
@@ -119,16 +170,35 @@ class FirmsData:
     detections: list[Detection] = field(default_factory=list)
     counts: dict[str, int] = field(default_factory=dict)
     new: dict[str, list[Detection]] = field(default_factory=dict)
+    zones: dict[str, ZoneData] = field(default_factory=dict)
+    latest_by_source: dict[str, datetime | None] = field(default_factory=dict)
 
 
-def query_boxes(boundaries: CountryBoundaries, settings: Settings) -> list[BBox]:
+def zone_bbox(zone: WatchZone) -> BBox:
+    """Bounding box of a zone's radius circle."""
+    dlat = zone.radius / 111.2
+    dlon = zone.radius / (111.2 * max(math.cos(math.radians(zone.latitude)), 0.01))
+    return (
+        zone.longitude - dlon,
+        zone.latitude - dlat,
+        zone.longitude + dlon,
+        zone.latitude + dlat,
+    )
+
+
+def query_boxes(
+    boundaries: CountryBoundaries,
+    settings: Settings,
+    zones: list[WatchZone] | None = None,
+) -> list[BBox]:
     """
     Areas to request from FIRMS: one union box, or two across the antimeridian.
 
     Union boxes include neighbouring territory; polygons filter it out later.
+    Watched zones extend the area so nearby fires count regardless of region.
     """
     ids = None if settings.whole_country else settings.regions
-    boxes = boundaries.bboxes(ids)
+    boxes = boundaries.bboxes(ids) + [zone_bbox(zone) for zone in zones or []]
     if not boxes:
         return []
     groups = [boxes]
@@ -146,6 +216,29 @@ def query_boxes(boundaries: CountryBoundaries, settings: Settings) -> list[BBox]
     ]
 
 
+def _assign_to_zones(hotspot: Hotspot, zones: list[WatchZone], data: FirmsData) -> None:
+    """Attach the hotspot to every watched zone whose radius covers it."""
+    for zone in zones:
+        zone_distance = distance_km(
+            zone.latitude, zone.longitude, hotspot.latitude, hotspot.longitude
+        )
+        if zone_distance <= zone.radius:
+            data.zones[zone.zone_id].detections.append(
+                ZoneDetection(hotspot, round(zone_distance, 2))
+            )
+
+
+def _collect_new(data: FirmsData, seen: set[str] | None) -> None:
+    """Fill per-region and per-zone lists of detections not seen before."""
+    if seen is None:
+        return
+    for detection in data.detections:
+        if detection.id not in seen:
+            data.new.setdefault(detection.region, []).append(detection)
+    for zone_data in data.zones.values():
+        zone_data.new = [d for d in zone_data.detections if d.id not in seen]
+
+
 def process(  # noqa: PLR0913
     hotspots: list[Hotspot],
     boundaries: CountryBoundaries,
@@ -154,24 +247,33 @@ def process(  # noqa: PLR0913
     home: tuple[float, float] | None,
     now: datetime,
     seen: set[str] | None,
+    zones: list[WatchZone] | None = None,
 ) -> FirmsData:
     """
     Filter, locate and count hotspots. CPU bound: run in an executor.
 
     seen holds ids from the previous refresh; None means first refresh, which
-    only sets the baseline and reports nothing as new.
+    only sets the baseline and reports nothing as new. Zones count hotspots by
+    distance alone, regardless of regions and country borders.
     """
+    zones = zones or []
     since = now - timedelta(hours=settings.hours)
     min_level = CONFIDENCE_LEVELS.index(settings.min_confidence)
     selected = set(settings.regions) - {WHOLE_COUNTRY}
-    data = FirmsData(counts=dict.fromkeys(settings.regions, 0))
+    data = FirmsData(
+        counts=dict.fromkeys(settings.regions, 0),
+        zones={zone.zone_id: ZoneData() for zone in zones},
+    )
     unique: dict[str, Detection] = {}
+    done: set[str] = set()
 
     for hotspot in hotspots:
-        if hotspot.id in unique or hotspot.acquired <= since:
+        if hotspot.id in done or hotspot.acquired <= since:
             continue
         if CONFIDENCE_LEVELS.index(hotspot.confidence) < min_level:
             continue
+        done.add(hotspot.id)
+        _assign_to_zones(hotspot, zones, data)
         region = boundaries.find(hotspot.latitude, hotspot.longitude)
         if region is None:
             continue
@@ -190,10 +292,9 @@ def process(  # noqa: PLR0913
             data.counts[WHOLE_COUNTRY] += 1
 
     data.detections = sorted(unique.values(), key=lambda d: d.hotspot.acquired)
-    if seen is not None:
-        for detection in data.detections:
-            if detection.id not in seen:
-                data.new.setdefault(detection.region, []).append(detection)
+    for zone_data in data.zones.values():
+        zone_data.detections.sort(key=lambda d: d.distance)
+    _collect_new(data, seen)
     return data
 
 
@@ -230,8 +331,35 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
         """Settings that define which detections are in scope."""
         s = self.settings
         return "|".join(
-            [",".join(sorted(s.regions)), ",".join(sorted(s.sources)), s.min_confidence]
+            [
+                ",".join(sorted(s.regions)),
+                ",".join(sorted(s.sources)),
+                s.min_confidence,
+                ",".join(sorted(s.zones)),
+                str(s.zone_radius),
+            ]
         )
+
+    @callback
+    def watch_zones(self) -> list[WatchZone]:
+        """Watched zones with current coordinates; missing zones are skipped."""
+        zones = []
+        for zone_id in self.settings.zones:
+            state = self.hass.states.get(zone_id)
+            if state is None or "latitude" not in state.attributes:
+                LOGGER.warning("Watched zone %s not found, skipping", zone_id)
+                continue
+            zones.append(
+                WatchZone(
+                    zone_id=zone_id,
+                    name=state.attributes.get("friendly_name")
+                    or zone_id.partition(".")[2],
+                    latitude=state.attributes["latitude"],
+                    longitude=state.attributes["longitude"],
+                    radius=self.settings.zone_radius,
+                )
+            )
+        return zones
 
     async def _async_setup(self) -> None:
         """
@@ -247,10 +375,13 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
 
     async def _async_update_data(self) -> FirmsData:
         s = self.settings
+        zones = self.watch_zones()
+        boxes = query_boxes(self.boundaries, s, zones)
+        request_sources = [source for source in s.sources for _ in boxes]
         requests = [
             self.client.async_get_hotspots(source, box, s.day_range)
             for source in s.sources
-            for box in query_boxes(self.boundaries, s)
+            for box in boxes
         ]
         entry_id = self.config_entry.entry_id
         try:
@@ -273,6 +404,13 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
             raise UpdateFailed(str(err)) from err
         ir.async_delete_issue(self.hass, DOMAIN, rate_limit_issue_id(entry_id))
 
+        latest_by_source: dict[str, datetime | None] = dict.fromkeys(s.sources)
+        for source, result in zip(request_sources, results, strict=True):
+            newest = max((h.acquired for h in result), default=None)
+            current = latest_by_source[source]
+            if newest and (current is None or newest > current):
+                latest_by_source[source] = newest
+
         config = self.hass.config
         home = (config.latitude, config.longitude) if config.latitude else None
         data = await self.hass.async_add_executor_job(
@@ -284,9 +422,13 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
                 home=home,
                 now=dt_util.utcnow(),
                 seen=self._seen,
+                zones=zones,
             )
         )
-        self._seen = {d.id for d in data.detections}
+        data.latest_by_source = latest_by_source
+        self._seen = {d.id for d in data.detections} | {
+            d.id for zone_data in data.zones.values() for d in zone_data.detections
+        }
         self._store.async_delay_save(self._stored_data, STORAGE_SAVE_DELAY)
         return data
 

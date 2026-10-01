@@ -15,6 +15,7 @@ from .const import (
     ATTR_ACQUIRED,
     ATTR_FRP_SUM,
     ATTR_LATEST_ACQUIRED,
+    ATTR_NEAREST,
     ATTR_REGION,
     WHOLE_COUNTRY,
 )
@@ -23,8 +24,11 @@ from .entity import (
     KEY_LAST,
     KEY_NEAREST,
     KIND_COUNT,
+    KIND_ZONE_COUNT,
+    KIND_ZONE_NEAREST,
     FirmsEntity,
     FirmsRegionEntity,
+    FirmsZoneEntity,
 )
 
 if TYPE_CHECKING:
@@ -33,7 +37,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-    from .coordinator import Detection, FirmsCoordinator
+    from .coordinator import Detection, FirmsCoordinator, WatchZone, ZoneData
     from .data import FirmsConfigEntry
 
 PARALLEL_UPDATES = 0
@@ -56,6 +60,9 @@ async def async_setup_entry(
         HotspotCountSensor(coordinator, region)
         for region in coordinator.settings.regions
     )
+    for zone in coordinator.watch_zones():
+        entities.append(ZoneCountSensor(coordinator, zone))
+        entities.append(ZoneNearestSensor(coordinator, zone))
     async_add_entities(entities)
 
 
@@ -85,6 +92,56 @@ class HotspotCountSensor(FirmsRegionEntity, SensorEntity):
             ATTR_FRP_SUM: round(sum(d.hotspot.frp or 0.0 for d in detections), 1),
             ATTR_LATEST_ACQUIRED: latest.isoformat() if latest else None,
         }
+
+
+class ZoneCountSensor(FirmsZoneEntity, SensorEntity):
+    """Hotspots within the radius of a watched zone."""
+
+    _zone_translation_key = "zone_hotspots"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: FirmsCoordinator, zone: WatchZone) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, KIND_ZONE_COUNT, zone)
+
+    def _zone_data(self) -> ZoneData | None:
+        return self.coordinator.data.zones.get(self.zone_id)
+
+    @property
+    def native_value(self) -> int | None:
+        """Number of hotspots within the radius."""
+        data = self._zone_data()
+        return data.count if data else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, float | str | None]:
+        """Distance to the nearest hotspot and total FRP in the radius."""
+        data = self._zone_data()
+        if data is None:
+            return {}
+        return {
+            ATTR_NEAREST: data.nearest,
+            ATTR_FRP_SUM: round(sum(d.hotspot.frp or 0.0 for d in data.detections), 1),
+        }
+
+
+class ZoneNearestSensor(FirmsZoneEntity, SensorEntity):
+    """Distance from a watched zone to its nearest hotspot."""
+
+    _zone_translation_key = "zone_nearest"
+    _attr_device_class = SensorDeviceClass.DISTANCE
+    _attr_native_unit_of_measurement = UnitOfLength.KILOMETERS
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, coordinator: FirmsCoordinator, zone: WatchZone) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, KIND_ZONE_NEAREST, zone)
+
+    @property
+    def native_value(self) -> float | None:
+        """Distance in km; unknown while the radius is clear."""
+        data = self.coordinator.data.zones.get(self.zone_id)
+        return data.nearest if data else None
 
 
 class LastDetectionSensor(FirmsEntity, SensorEntity):

@@ -54,12 +54,16 @@
           "min_confidence": "Minimum confidence",
           "sources": "Satellite sources",
           "update_interval": "Update interval",
+          "zones": "Watch zones",
+          "zone_radius": "Zone radius",
           "show_on_map": "Show hotspots on the map"
         },
         "data_description": {
           "hours": "Count detections acquired within this many hours.",
           "min_confidence": "Ignore detections below this level. \"Low\" counts everything, like SaveEcoBot.",
           "update_interval": "How often to poll NASA FIRMS, in minutes. New data arrives a few times a day per satellite.",
+          "zones": "Home Assistant zones to watch. Hotspots within the radius count regardless of regions and country borders.",
+          "zone_radius": "Radius around every watched zone, in kilometres.",
           "show_on_map": "Adds a map marker per hotspot. Can be hundreds for a whole country."
         }
       }
@@ -93,6 +97,12 @@
       },
       "country_fire": {
         "name": "Fire: whole country"
+      },
+      "zone_fire": {
+        "name": "Fire near {zone}"
+      },
+      "stale_data": {
+        "name": "Stale data"
       }
     },
     "sensor": {
@@ -110,6 +120,12 @@
       },
       "total_frp": {
         "name": "Total fire radiative power"
+      },
+      "zone_hotspots": {
+        "name": "Hotspots near {zone}"
+      },
+      "zone_nearest": {
+        "name": "Nearest hotspot: {zone}"
       }
     },
     "event": {
@@ -118,7 +134,8 @@
         "state_attributes": {
           "event_type": {
             "state": {
-              "detected": "Detected"
+              "detected": "Detected",
+              "detected_near_zone": "Detected near a zone"
             }
           }
         }

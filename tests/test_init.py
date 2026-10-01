@@ -21,6 +21,8 @@ from custom_components.fire_hotspots.const import (
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_UPDATE_INTERVAL,
+    CONF_ZONE_RADIUS,
+    CONF_ZONES,
     DOMAIN,
 )
 from custom_components.fire_hotspots.coordinator import (
@@ -283,6 +285,80 @@ async def test_config_entities_update_options(
     await hass.async_block_till_done()
     assert config_entry.options[CONF_SHOW_ON_MAP] is True
     assert hass.states.get(_entity_id(hass, "map")).state == "on"
+
+
+async def test_zone_entities_and_events(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_hotspots: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """Watched zones count across the border and fire their own event."""
+    hass.states.async_set(
+        "zone.dacha",
+        "0",
+        {
+            "latitude": KURSK_BORDER[0],
+            "longitude": KURSK_BORDER[1],
+            "radius": 100,
+            "friendly_name": "Dacha",
+        },
+    )
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={
+            **config_entry.options,
+            CONF_ZONES: ["zone.dacha"],
+            CONF_ZONE_RADIUS: 30,
+        },
+    )
+    mock_hotspots.return_value = [make_hotspot(*KURSK_BORDER)]
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    count = hass.states.get(_entity_id(hass, "zone_count_dacha"))
+    assert count.state == "1"
+    assert "Dacha" in count.attributes["friendly_name"]
+    assert count.attributes["frp_sum"] == 4.2
+    assert hass.states.get(_entity_id(hass, "zone_fire_dacha")).state == "on"
+    assert float(hass.states.get(_entity_id(hass, "zone_nearest_dacha")).state) < 1
+    # the border hotspot is outside the country, so regions stay clear
+    assert hass.states.get(_entity_id(hass, "count_country")).state == "0"
+
+    mock_hotspots.return_value = [
+        make_hotspot(*KURSK_BORDER),
+        make_hotspot(*KURSK_BORDER, hours_ago=0.5),
+    ]
+    await _refresh(hass, config_entry)
+    event = hass.states.get(_entity_id(hass, "new"))
+    assert event.attributes["event_type"] == "detected_near_zone"
+    assert event.attributes["zone"] == "zone.dacha"
+    assert event.attributes["zone_name"] == "Dacha"
+    assert event.attributes["count"] == 1
+    assert event.attributes["detections"][0]["distance"] < 1
+
+
+async def test_stale_data_sensor(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_hotspots: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """Problem sensor flags an aging raw feed; empty feed is unknown."""
+    mock_hotspots.return_value = [make_hotspot(*KYIV, hours_ago=10)]
+    await _setup(hass, config_entry)
+    stale = hass.states.get(_entity_id(hass, "stale"))
+    assert stale.state == "on"
+    assert stale.attributes["VIIRS_SNPP_NRT"] is not None
+
+    mock_hotspots.return_value = [make_hotspot(*KYIV)]
+    await _refresh(hass, config_entry)
+    assert hass.states.get(_entity_id(hass, "stale")).state == "off"
+
+    mock_hotspots.return_value = []
+    await _refresh(hass, config_entry)
+    assert hass.states.get(_entity_id(hass, "stale")).state == "unknown"
 
 
 async def test_rate_limit_opens_and_closes_issue(

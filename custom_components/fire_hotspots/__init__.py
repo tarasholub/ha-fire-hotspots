@@ -17,6 +17,7 @@ from .const import CONF_COUNTRY, CONF_MAP_KEY, DOMAIN
 from .coordinator import (
     STORAGE_VERSION,
     FirmsCoordinator,
+    Settings,
     rate_limit_issue_id,
     seen_store_key,
 )
@@ -53,17 +54,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> boo
     await coordinator.async_config_entry_first_refresh()
 
     entry.runtime_data = FirmsRuntimeData(coordinator=coordinator)
-    _remove_stale_entities(hass, entry, coordinator.settings.regions)
+    _remove_stale_entities(hass, entry, coordinator.settings)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 def _remove_stale_entities(
-    hass: HomeAssistant, entry: FirmsConfigEntry, regions: list[str]
+    hass: HomeAssistant, entry: FirmsConfigEntry, settings: Settings
 ) -> None:
-    """Drop entities of regions that were deselected in options."""
+    """Drop entities of regions and zones that were deselected in options."""
     registry = er.async_get(hass)
-    expected = expected_unique_ids(entry.entry_id, regions)
+    expected = expected_unique_ids(entry.entry_id, settings.regions, settings.zones)
     for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
         if entity.unique_id not in expected:
             registry.async_remove(entity.entity_id)

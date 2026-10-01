@@ -16,6 +16,8 @@ from homeassistant.helpers.selector import (
     BooleanSelector,
     CountrySelector,
     CountrySelectorConfig,
+    EntitySelector,
+    EntitySelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -44,19 +46,24 @@ from .const import (
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
     CONF_UPDATE_INTERVAL,
+    CONF_ZONE_RADIUS,
+    CONF_ZONES,
     CONFIDENCE_LEVELS,
     DEFAULT_HOURS,
     DEFAULT_MIN_CONFIDENCE,
     DEFAULT_SHOW_ON_MAP,
     DEFAULT_SOURCES,
     DEFAULT_UPDATE_MINUTES,
+    DEFAULT_ZONE_RADIUS_KM,
     DOMAIN,
     LOGGER,
     MAP_KEY_URL,
     MAX_HOURS,
     MAX_UPDATE_MINUTES,
+    MAX_ZONE_RADIUS_KM,
     MIN_HOURS,
     MIN_UPDATE_MINUTES,
+    MIN_ZONE_RADIUS_KM,
     SOURCE_LABELS,
     SOURCE_VIIRS_SNPP,
     WHOLE_COUNTRY,
@@ -328,6 +335,20 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
                         max=MAX_UPDATE_MINUTES,
                         step=1,
                         unit_of_measurement="min",
+                        mode=NumberSelectorMode.BOX,
+                    )
+                ),
+                vol.Optional(CONF_ZONES, default=[]): EntitySelector(
+                    EntitySelectorConfig(domain="zone", multiple=True)
+                ),
+                vol.Required(
+                    CONF_ZONE_RADIUS, default=DEFAULT_ZONE_RADIUS_KM
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_ZONE_RADIUS_KM,
+                        max=MAX_ZONE_RADIUS_KM,
+                        step=1,
+                        unit_of_measurement="km",
                         mode=NumberSelectorMode.BOX,
                     )
                 ),

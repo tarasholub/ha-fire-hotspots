@@ -12,6 +12,15 @@
         "state": {
           "on": "mdi:fire-alert"
         }
+      },
+      "zone_fire": {
+        "default": "mdi:fire-off",
+        "state": {
+          "on": "mdi:fire-alert"
+        }
+      },
+      "stale_data": {
+        "default": "mdi:satellite-uplink"
       }
     },
     "sensor": {
@@ -29,6 +38,12 @@
       },
       "total_frp": {
         "default": "mdi:heat-wave"
+      },
+      "zone_hotspots": {
+        "default": "mdi:fire"
+      },
+      "zone_nearest": {
+        "default": "mdi:map-marker-distance"
       }
     },
     "event": {

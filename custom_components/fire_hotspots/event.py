@@ -20,7 +20,10 @@ from .const import (
     ATTR_REGION_NAME,
     ATTR_SATELLITE,
     ATTR_SOURCE,
+    ATTR_ZONE,
+    ATTR_ZONE_NAME,
     EVENT_DETECTED,
+    EVENT_DETECTED_NEAR_ZONE,
     MAX_EVENT_DETECTIONS,
 )
 from .entity import KEY_NEW, FirmsEntity, region_name
@@ -29,7 +32,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-    from .coordinator import Detection, FirmsCoordinator
+    from .coordinator import Detection, FirmsCoordinator, ZoneDetection
     from .data import FirmsConfigEntry
 
 PARALLEL_UPDATES = 0
@@ -45,7 +48,7 @@ async def async_setup_entry(
     async_add_entities([NewHotspotsEvent(entry.runtime_data.coordinator)])
 
 
-def detection_attributes(detection: Detection) -> dict[str, Any]:
+def detection_attributes(detection: Detection | ZoneDetection) -> dict[str, Any]:
     """Compact description of one detection."""
     hotspot = detection.hotspot
     return {
@@ -65,10 +68,10 @@ def detection_attributes(detection: Detection) -> dict[str, Any]:
 
 
 class NewHotspotsEvent(FirmsEntity, EventEntity):
-    """Fires `detected` once per region that has new hotspots."""
+    """Fires once per region, and once per watched zone, with new hotspots."""
 
     _attr_translation_key = "new_hotspots"
-    _attr_event_types = [EVENT_DETECTED]  # noqa: RUF012
+    _attr_event_types = [EVENT_DETECTED, EVENT_DETECTED_NEAR_ZONE]  # noqa: RUF012
 
     def __init__(self, coordinator: FirmsCoordinator) -> None:
         """Initialize the event entity."""
@@ -94,6 +97,23 @@ class NewHotspotsEvent(FirmsEntity, EventEntity):
                     ATTR_DETECTIONS: [
                         detection_attributes(d)
                         for d in nearest_first[:MAX_EVENT_DETECTIONS]
+                    ],
+                },
+            )
+            self.async_write_ha_state()
+        zone_names = {z.zone_id: z.name for z in self.coordinator.watch_zones()}
+        for zone_id, zone_data in self.coordinator.data.zones.items():
+            if not zone_data.new:
+                continue
+            self._trigger_event(
+                EVENT_DETECTED_NEAR_ZONE,
+                {
+                    ATTR_ZONE: zone_id,
+                    ATTR_ZONE_NAME: zone_names.get(zone_id, zone_id),
+                    ATTR_COUNT: len(zone_data.new),
+                    ATTR_DETECTIONS: [
+                        detection_attributes(d)
+                        for d in zone_data.new[:MAX_EVENT_DETECTIONS]
                     ],
                 },
             )

@@ -43,6 +43,12 @@ Per country:
 - `sensor` **Total fire radiative power** (MW) — summed FRP of all monitored hotspots.
 - `event` **New hotspots** — `detected` once per region with new hotspots; attributes `region`, `region_name`, `count`, `detections` (up to 50, nearest first).
 - `geo_location` — one map marker per hotspot (off by default).
+- `binary_sensor` (diagnostic) **Stale data** — problem when satellites have not delivered for a while; per-source timestamps in attributes.
+
+Per watched zone (optional): **Hotspots near _zone_** (counts within the
+radius, regardless of regions and country borders), **Fire near _zone_**
+(safety) and **Nearest hotspot: _zone_** (km from the zone centre). New
+hotspots near zones fire a separate `detected_near_zone` event type.
 
 ![Device page with sensors](./media/device-page.png)
 
@@ -88,7 +94,8 @@ regions and/or "Whole country". Each country is a separate integration entry.
 
 Options (the **Configure** button): regions, time window (1–96 h, default 24),
 minimum confidence (default low), satellite sources (default all four), update
-interval (10–180 min, default 30), show on map (default off).
+interval (10–180 min, default 30), watch zones with a shared radius
+(1–200 km, default 20), show on map (default off).
 
 The time window, confidence, interval and map toggle are also exposed as
 configuration entities on the device page:

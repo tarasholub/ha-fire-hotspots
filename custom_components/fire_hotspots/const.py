@@ -23,6 +23,8 @@ CONF_MIN_CONFIDENCE: Final = "min_confidence"
 CONF_SOURCES: Final = "sources"
 CONF_SHOW_ON_MAP: Final = "show_on_map"
 CONF_UPDATE_INTERVAL: Final = "update_interval"  # minutes
+CONF_ZONES: Final = "zones"  # zone entity ids to watch
+CONF_ZONE_RADIUS: Final = "zone_radius"  # km, shared by all watched zones
 
 # Pseudo region id for "whole country" (sum of all regions).
 WHOLE_COUNTRY: Final = "country"
@@ -68,8 +70,17 @@ MAX_HOURS: Final = 96  # FIRMS area API allows up to 5 days per request
 MIN_UPDATE_MINUTES: Final = 10
 MAX_UPDATE_MINUTES: Final = 180
 
+DEFAULT_ZONE_RADIUS_KM: Final = 20
+MIN_ZONE_RADIUS_KM: Final = 1
+MAX_ZONE_RADIUS_KM: Final = 200
+
+# Newest raw detection older than this means satellites have not delivered
+# for a while; VIIRS and MODIS together normally pass every few hours.
+STALE_AFTER_HOURS: Final = 8
+
 # Event entity
 EVENT_DETECTED: Final = "detected"
+EVENT_DETECTED_NEAR_ZONE: Final = "detected_near_zone"
 MAX_EVENT_DETECTIONS: Final = 50  # cap attribute size per event
 
 # Attributes
@@ -87,3 +98,6 @@ ATTR_COUNT: Final = "count"
 ATTR_DETECTIONS: Final = "detections"
 ATTR_FRP_SUM: Final = "frp_sum"
 ATTR_LATEST_ACQUIRED: Final = "latest_acquired"
+ATTR_ZONE: Final = "zone"
+ATTR_ZONE_NAME: Final = "zone_name"
+ATTR_NEAREST: Final = "nearest"

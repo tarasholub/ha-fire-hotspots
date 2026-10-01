@@ -22,6 +22,7 @@ from custom_components.fire_hotspots.const import WHOLE_COUNTRY
 from custom_components.fire_hotspots.coordinator import (
     FirmsCoordinator,
     Settings,
+    WatchZone,
     process,
     query_boxes,
     seen_store_key,
@@ -65,8 +66,57 @@ def test_settings_defaults() -> None:
     assert s.day_range == 2
     assert not s.show_on_map
     assert s.update_minutes == 30
+    assert s.zones == []
+    assert s.zone_radius == 20
     assert Settings.from_options({"hours": 96}).day_range == 5
     assert Settings.from_options({"update_interval": 60.0}).update_minutes == 60
+
+
+def zone(zone_id: str, lat: float, lon: float, radius: float) -> WatchZone:
+    """Build a watch zone for tests."""
+    return WatchZone(
+        zone_id=zone_id, name=zone_id, latitude=lat, longitude=lon, radius=radius
+    )
+
+
+def test_query_boxes_with_zones(ukraine: CountryBoundaries) -> None:
+    """Zone circles extend the query area; zones alone are enough."""
+    dacha = zone("zone.dacha", *KURSK_BORDER, 30)
+    (box,) = query_boxes(ukraine, settings(["UA-46"]), [dacha])
+    assert box[2] > KURSK_BORDER[1]  # stretched east to cover the zone
+    (only,) = query_boxes(ukraine, settings([]), [dacha])
+    assert only[0] < KURSK_BORDER[1] < only[2]
+    assert only[1] < KURSK_BORDER[0] < only[3]
+
+
+def test_process_zones(ukraine: CountryBoundaries) -> None:
+    """Zones count by distance alone, regardless of regions and borders."""
+    zones = [zone("zone.home", *KYIV, 50), zone("zone.dacha", *KURSK_BORDER, 30)]
+    hotspots = [
+        make_hotspot(*KYIV),
+        make_hotspot(*BUCHA),
+        make_hotspot(*KURSK_BORDER),  # Russia: out of country, inside a zone
+        make_hotspot(*KHERSON),  # in country, outside both zones
+    ]
+    s = settings([WHOLE_COUNTRY])
+    now = dt_util.utcnow()
+    data = process(hotspots, ukraine, s, home=None, now=now, seen=None, zones=zones)
+    home_zone = data.zones["zone.home"]
+    assert home_zone.count == 2  # Kyiv + Bucha
+    assert home_zone.nearest == pytest.approx(0, abs=0.5)
+    distances = [d.distance for d in home_zone.detections]
+    assert distances == sorted(distances)
+    assert data.zones["zone.dacha"].count == 1
+    assert data.counts[WHOLE_COUNTRY] == 3  # border hotspot not in the country
+    assert home_zone.new == []  # first refresh is a baseline
+
+    seen = {d.id for d in data.detections} | {
+        d.id for zone_data in data.zones.values() for d in zone_data.detections
+    }
+    fresh = [*hotspots, make_hotspot(*BUCHA, hours_ago=0.5)]
+    data = process(fresh, ukraine, s, home=None, now=now, seen=seen, zones=zones)
+    assert len(data.zones["zone.home"].new) == 1
+    assert data.zones["zone.dacha"].new == []
 
 
 def test_query_boxes(ukraine: CountryBoundaries) -> None:
