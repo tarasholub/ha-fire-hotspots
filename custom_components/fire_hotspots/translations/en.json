@@ -46,7 +46,7 @@
   },
   "options": {
     "step": {
-      "init": {
+      "settings": {
         "title": "Fire Hotspots settings",
         "data": {
           "regions": "Regions",
@@ -67,11 +67,37 @@
           "zone_radius": "Radius around every watched zone, in kilometres.",
           "show_on_map": "Adds a map marker per hotspot. Can be hundreds for a whole country."
         }
+      },
+      "init": {
+        "title": "Fire Hotspots",
+        "menu_options": {
+          "settings": "Settings",
+          "add_point": "Add a watch point",
+          "remove_points": "Remove watch points"
+        }
+      },
+      "add_point": {
+        "title": "Add a watch point",
+        "data": {
+          "name": "Name",
+          "location": "Location and radius"
+        },
+        "data_description": {
+          "name": "Shown in entity names, e.g. \"Cottage\".",
+          "location": "Drag the marker and resize the circle; hotspots within it are counted regardless of regions and borders."
+        }
+      },
+      "remove_points": {
+        "title": "Remove watch points",
+        "data": {
+          "points": "Points"
+        }
       }
     },
     "error": {
       "no_regions": "Select at least one region.",
-      "no_sources": "Select at least one source."
+      "no_sources": "Select at least one source.",
+      "duplicate_point": "A point with this name already exists."
     },
     "abort": {
       "boundaries_unavailable": "Boundaries are not available. Try again later."

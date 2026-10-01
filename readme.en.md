@@ -101,6 +101,11 @@ minimum confidence (default low), satellite sources (default all four), update
 interval (10–180 min, default 30), watch zones with a shared radius
 (1–200 km, default 20), show on map (default off).
 
+Besides zones, **watch points** can be added right on a map: **Configure** →
+"Add a watch point" → name plus a draggable marker and radius circle (each
+point has its own radius). A point gets the same entities and events as a
+zone; remove points from the same menu.
+
 The time window, confidence, interval and map toggle are also exposed as
 configuration entities on the device page:
 

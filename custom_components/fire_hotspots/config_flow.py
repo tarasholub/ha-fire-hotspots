@@ -18,6 +18,8 @@ from homeassistant.helpers.selector import (
     CountrySelectorConfig,
     EntitySelector,
     EntitySelectorConfig,
+    LocationSelector,
+    LocationSelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -42,6 +44,7 @@ from .const import (
     CONF_HOURS,
     CONF_MAP_KEY,
     CONF_MIN_CONFIDENCE,
+    CONF_POINTS,
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
@@ -81,6 +84,8 @@ if TYPE_CHECKING:
 ALLOWED_COUNTRIES = sorted(set(COUNTRIES) - EXCLUDED_COUNTRIES)
 MAP_KEY_SELECTOR = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
 VALIDATION_BBOX = (30.0, 50.0, 30.01, 50.01)  # tiny area: one cheap request
+CONF_POINT_NAME = "name"
+CONF_POINT_LOCATION = "location"
 
 
 async def validate_map_key(hass: HomeAssistant, map_key: str) -> str | None:
@@ -302,9 +307,92 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class FireHotspotsOptionsFlow(OptionsFlowWithReload):
-    """Regions, time window, confidence, sources and map markers."""
+    """Settings plus management of watch points picked on the map."""
 
     async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Choose between the settings form and watch point management."""
+        del user_input
+        menu = ["settings", "add_point"]
+        if self.config_entry.options.get(CONF_POINTS):
+            menu.append("remove_points")
+        return self.async_show_menu(step_id="init", menu_options=menu)
+
+    async def async_step_add_point(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Name a point and pick its location and radius on the map."""
+        errors: dict[str, str] = {}
+        points = list(self.config_entry.options.get(CONF_POINTS, []))
+        if user_input is not None:
+            name = user_input[CONF_POINT_NAME].strip()
+            location = user_input[CONF_POINT_LOCATION]
+            if not name or any(p["name"] == name for p in points):
+                errors[CONF_POINT_NAME] = "duplicate_point"
+            else:
+                points.append(
+                    {
+                        "name": name,
+                        "latitude": location["latitude"],
+                        "longitude": location["longitude"],
+                        "radius": round(
+                            location.get("radius", DEFAULT_ZONE_RADIUS_KM * 1000)
+                            / 1000,
+                            1,
+                        ),
+                    }
+                )
+                return self.async_create_entry(
+                    data={**self.config_entry.options, CONF_POINTS: points}
+                )
+        config = self.hass.config
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_POINT_NAME): TextSelector(),
+                vol.Required(CONF_POINT_LOCATION): LocationSelector(
+                    LocationSelectorConfig(radius=True)
+                ),
+            }
+        )
+        suggested = user_input or {
+            CONF_POINT_LOCATION: {
+                "latitude": config.latitude,
+                "longitude": config.longitude,
+                "radius": DEFAULT_ZONE_RADIUS_KM * 1000,
+            }
+        }
+        return self.async_show_form(
+            step_id="add_point",
+            data_schema=self.add_suggested_values_to_schema(schema, suggested),
+            errors=errors,
+        )
+
+    async def async_step_remove_points(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Remove selected watch points."""
+        points = list(self.config_entry.options.get(CONF_POINTS, []))
+        if user_input is not None:
+            removed = set(user_input[CONF_POINTS])
+            keep = [p for p in points if p["name"] not in removed]
+            return self.async_create_entry(
+                data={**self.config_entry.options, CONF_POINTS: keep}
+            )
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_POINTS, default=[]): SelectSelector(
+                    SelectSelectorConfig(
+                        options=[p["name"] for p in points],
+                        multiple=True,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                )
+            }
+        )
+        return self.async_show_form(step_id="remove_points", data_schema=schema)
+
+    async def async_step_settings(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
@@ -325,6 +413,7 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
                 user_input[CONF_REGIONS] = normalize_regions(
                     user_input[CONF_REGIONS], boundaries
                 )
+                user_input[CONF_POINTS] = self.config_entry.options.get(CONF_POINTS, [])
                 return self.async_create_entry(data=user_input)
         schema = vol.Schema(
             {
@@ -386,7 +475,7 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
             }
         )
         return self.async_show_form(
-            step_id="init",
+            step_id="settings",
             data_schema=self.add_suggested_values_to_schema(
                 schema, user_input or dict(self.config_entry.options)
             ),

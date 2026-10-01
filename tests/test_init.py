@@ -18,6 +18,7 @@ from custom_components.fire_hotspots.api import (
 from custom_components.fire_hotspots.boundaries import BoundariesError
 from custom_components.fire_hotspots.const import (
     CONF_MIN_CONFIDENCE,
+    CONF_POINTS,
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_UPDATE_INTERVAL,
@@ -348,6 +349,39 @@ async def test_zone_entities_and_events(
     assert event.attributes["zone_name"] == "Dacha"
     assert event.attributes["count"] == 1
     assert event.attributes["detections"][0]["distance"] < 1
+
+
+async def test_watch_point_entities(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_hotspots: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """A watch point gets the same entities as a zone, with its own radius."""
+    config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        config_entry,
+        options={
+            **config_entry.options,
+            CONF_POINTS: [
+                {
+                    "name": "Дача",
+                    "latitude": KURSK_BORDER[0],
+                    "longitude": KURSK_BORDER[1],
+                    "radius": 15.0,
+                }
+            ],
+        },
+    )
+    mock_hotspots.return_value = [make_hotspot(*KURSK_BORDER)]
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    count = hass.states.get(_entity_id(hass, "zone_count_pt-dacha"))
+    assert count.state == "1"
+    assert "Дача" in count.attributes["friendly_name"]
+    assert hass.states.get(_entity_id(hass, "zone_fire_pt-dacha")).state == "on"
+    assert float(hass.states.get(_entity_id(hass, "zone_nearest_pt-dacha")).state) < 1
 
 
 async def test_stale_data_sensor(

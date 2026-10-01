@@ -29,6 +29,9 @@ CONF_SHOW_ON_MAP: Final = "show_on_map"
 CONF_UPDATE_INTERVAL: Final = "update_interval"  # minutes
 CONF_ZONES: Final = "zones"  # zone entity ids to watch
 CONF_ZONE_RADIUS: Final = "zone_radius"  # km, shared by all watched zones
+# Watch points: [{"name", "latitude", "longitude", "radius"}], radius in km,
+# each point has its own radius picked on the map.
+CONF_POINTS: Final = "points"
 
 # Pseudo region id for "whole country" (sum of all regions).
 WHOLE_COUNTRY: Final = "country"

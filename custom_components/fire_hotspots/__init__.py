@@ -20,6 +20,7 @@ from .coordinator import (
     STORAGE_VERSION,
     FirmsCoordinator,
     Settings,
+    point_zone_id,
     rate_limit_issue_id,
     seen_store_key,
 )
@@ -79,7 +80,8 @@ def _remove_stale_entities(
 ) -> None:
     """Drop entities of regions and zones that were deselected in options."""
     registry = er.async_get(hass)
-    expected = expected_unique_ids(entry.entry_id, settings.regions, settings.zones)
+    watched = settings.zones + [point_zone_id(p["name"]) for p in settings.points]
+    expected = expected_unique_ids(entry.entry_id, settings.regions, watched)
     for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
         if entity.unique_id not in expected:
             registry.async_remove(entity.entity_id)

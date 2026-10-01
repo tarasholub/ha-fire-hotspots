@@ -15,6 +15,7 @@ from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
 from .api import (
     FirmsAuthError,
@@ -28,6 +29,7 @@ from .boundaries import BBox, CountryBoundaries, distance_km
 from .const import (
     CONF_HOURS,
     CONF_MIN_CONFIDENCE,
+    CONF_POINTS,
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
@@ -60,6 +62,11 @@ def rate_limit_issue_id(entry_id: str) -> str:
     return f"rate_limit_{entry_id}"
 
 
+def point_zone_id(name: str) -> str:
+    """Pseudo zone id of a watch point; pt- prefix avoids zone collisions."""
+    return f"point.pt-{slugify(name)}"
+
+
 if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant
 
@@ -78,6 +85,7 @@ class Settings:
     update_minutes: int
     zones: list[str]
     zone_radius: float  # km
+    points: list[dict[str, Any]]  # name, latitude, longitude, radius (km)
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> Settings:
@@ -93,6 +101,7 @@ class Settings:
             ),
             zones=list(options.get(CONF_ZONES, [])),
             zone_radius=float(options.get(CONF_ZONE_RADIUS, DEFAULT_ZONE_RADIUS_KM)),
+            points=list(options.get(CONF_POINTS, [])),
         )
 
     @property
@@ -332,6 +341,10 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
     def _fingerprint(self) -> str:
         """Settings that define which detections are in scope."""
         s = self.settings
+        points = sorted(
+            f"{p['name']}:{p['latitude']}:{p['longitude']}:{p['radius']}"
+            for p in s.points
+        )
         return "|".join(
             [
                 ",".join(sorted(s.regions)),
@@ -339,13 +352,23 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
                 s.min_confidence,
                 ",".join(sorted(s.zones)),
                 str(s.zone_radius),
+                ",".join(points),
             ]
         )
 
     @callback
     def watch_zones(self) -> list[WatchZone]:
-        """Watched zones with current coordinates; missing zones are skipped."""
-        zones = []
+        """Watched zones and points; missing zone entities are skipped."""
+        zones = [
+            WatchZone(
+                zone_id=point_zone_id(point["name"]),
+                name=point["name"],
+                latitude=float(point["latitude"]),
+                longitude=float(point["longitude"]),
+                radius=float(point["radius"]),
+            )
+            for point in self.settings.points
+        ]
         for zone_id in self.settings.zones:
             state = self.hass.states.get(zone_id)
             if state is None or "latitude" not in state.attributes:

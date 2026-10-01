@@ -21,6 +21,7 @@ from custom_components.fire_hotspots.const import (
     CONF_HOURS,
     CONF_MAP_KEY,
     CONF_MIN_CONFIDENCE,
+    CONF_POINTS,
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
@@ -233,6 +234,10 @@ async def test_options_flow(
     """Options are validated and saved."""
     config_entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    assert result["type"] is FlowResultType.MENU
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     assert result["type"] is FlowResultType.FORM
 
     options = {
@@ -304,6 +309,9 @@ async def test_options_flow_all_regions_add_whole_country(
     """Manually picking every region adds the whole-country counter."""
     config_entry.add_to_hass(hass)
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "settings"}
+    )
     selector = result["data_schema"].schema[CONF_REGIONS].config
     all_regions = [
         o["value"] for o in selector["options"] if o["value"] != WHOLE_COUNTRY
@@ -337,5 +345,63 @@ async def test_options_flow_without_boundaries(
         side_effect=BoundariesError,
     ):
         result = await hass.config_entries.options.async_init(config_entry.entry_id)
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {"next_step_id": "settings"}
+        )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "boundaries_unavailable"
+
+
+async def test_watch_point_add_and_remove(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_setup: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """Points are added from the map with a radius and removed by name."""
+    config_entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    assert result["type"] is FlowResultType.MENU
+    assert "remove_points" not in result["menu_options"]  # nothing to remove yet
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "add_point"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            "name": "Дача",
+            "location": {"latitude": 50.1, "longitude": 30.2, "radius": 15000},
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert config_entry.options[CONF_POINTS] == [
+        {"name": "Дача", "latitude": 50.1, "longitude": 30.2, "radius": 15.0}
+    ]
+
+    # duplicate names are rejected
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "add_point"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            "name": "Дача",
+            "location": {"latitude": 51.0, "longitude": 31.0, "radius": 5000},
+        },
+    )
+    assert result["errors"] == {"name": "duplicate_point"}
+    hass.config_entries.options.async_abort(result["flow_id"])
+
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    assert "remove_points" in result["menu_options"]
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": "remove_points"}
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {CONF_POINTS: ["Дача"]}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert config_entry.options[CONF_POINTS] == []
