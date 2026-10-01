@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -62,6 +63,9 @@ async def test_entities(
     ]
     await _setup(hass, config_entry)
     assert config_entry.state is ConfigEntryState.LOADED
+    assert config_entry.runtime_data.coordinator.update_interval == timedelta(
+        minutes=30
+    )
 
     assert hass.states.get(_entity_id(hass, "count_ua-30")).state == "2"
     assert hass.states.get(_entity_id(hass, "count_ua-65")).state == "0"

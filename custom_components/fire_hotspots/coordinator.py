@@ -23,14 +23,15 @@ from .const import (
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
+    CONF_UPDATE_INTERVAL,
     CONFIDENCE_LEVELS,
     DEFAULT_HOURS,
     DEFAULT_MIN_CONFIDENCE,
     DEFAULT_SHOW_ON_MAP,
     DEFAULT_SOURCES,
+    DEFAULT_UPDATE_MINUTES,
     DOMAIN,
     LOGGER,
-    UPDATE_INTERVAL,
     WHOLE_COUNTRY,
 )
 
@@ -58,6 +59,7 @@ class Settings:
     min_confidence: str
     sources: list[str]
     show_on_map: bool
+    update_minutes: int
 
     @classmethod
     def from_options(cls, options: dict[str, Any]) -> Settings:
@@ -68,6 +70,9 @@ class Settings:
             min_confidence=options.get(CONF_MIN_CONFIDENCE, DEFAULT_MIN_CONFIDENCE),
             sources=list(options.get(CONF_SOURCES, DEFAULT_SOURCES)),
             show_on_map=bool(options.get(CONF_SHOW_ON_MAP, DEFAULT_SHOW_ON_MAP)),
+            update_minutes=int(
+                options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_MINUTES)
+            ),
         )
 
     @property
@@ -193,16 +198,16 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
         boundaries: CountryBoundaries,
     ) -> None:
         """Initialize the coordinator."""
+        self.settings = Settings.from_options(dict(config_entry.options))
         super().__init__(
             hass,
             LOGGER,
             config_entry=config_entry,
             name=DOMAIN,
-            update_interval=UPDATE_INTERVAL,
+            update_interval=timedelta(minutes=self.settings.update_minutes),
         )
         self.client = client
         self.boundaries = boundaries
-        self.settings = Settings.from_options(dict(config_entry.options))
         self._seen: set[str] | None = None
         self._store: Store[dict[str, Any]] = Store(
             hass, STORAGE_VERSION, seen_store_key(config_entry.entry_id)
