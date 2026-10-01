@@ -1,15 +1,29 @@
+[![SWUbanner](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner-direct-single.svg)](https://stand-with-ukraine.pp.ua/)
+
+<br>
+
+![Fire Hotspots Logo](./custom_components/fire_hotspots/brand/logo@2x.png#gh-light-mode-only)
+![Fire Hotspots Logo](./custom_components/fire_hotspots/brand/dark_logo@2x.png#gh-dark-mode-only)
+
+<br>
+
 # 🔥 Fire Hotspots for Home Assistant
 
-[Українська](README.md)
+[![GitHub Release][gh-release-image]][gh-release-url]
+[![GitHub Downloads][gh-downloads-image]][gh-downloads-url]
+[![hacs][hacs-image]][hacs-url]
+[![License][license-image]][license-url]
 
-Satellite fire hotspots for a country and its regions in Home Assistant:
-counters, "fire in region" sensors, distance to the nearest hotspot, events for
-automations and optional map markers.
+[Українська](./README.md) | [**English**](./readme.en.md)
 
-Data: [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/) (VIIRS and MODIS).
-Boundaries: [geoBoundaries](https://www.geoboundaries.org/).
+> [!NOTE]
+> Satellite fire hotspots for a country and its regions in Home Assistant:
+> counters, "fire in region" sensors, distance to the nearest hotspot, events
+> for automations and optional map markers.
+> Data: [NASA FIRMS][firms] (VIIRS and MODIS). Boundaries:
+> [geoBoundaries][geoboundaries].
 
-> [!WARNING]
+> [!IMPORTANT]
 > Independent community project, not affiliated with NASA or geoBoundaries.
 > Satellites detect thermal anomalies, not confirmed fires, with a delay of up
 > to a few hours. Do not rely on this integration as your only safety source.
@@ -30,33 +44,68 @@ Per country:
 - `event` **New hotspots** — `detected` once per region with new hotspots; attributes `region`, `region_name`, `count`, `detections` (up to 50, nearest first).
 - `geo_location` — one map marker per hotspot (off by default).
 
+![Device page with sensors](./media/device-page.png)
+
 ## Installation
 
-HACS → Custom repositories → `https://github.com/tarasholub/ha-fire-hotspots`
-(Integration), install **Fire Hotspots**, restart. Or copy
-`custom_components/fire_hotspots` into `config/custom_components/`.
+The quickest way is via [HACS][hacs-url] by selecting the button below:
+
+[![Add to HACS via My Home Assistant][hacs-install-image]][hacs-install-url]
+
+<details>
+  <summary>If the button doesn't work, add the repository manually</summary>
+
+1. Open **HACS** → **⋮** → **Custom repositories**.
+2. Paste `https://github.com/tarasholub/ha-fire-hotspots` as the repository URL.
+3. Choose **Integration** as the category.
+4. Find and install **Fire Hotspots**, then restart Home Assistant.
+
+</details>
+
+Or manually: copy `custom_components/fire_hotspots` into
+`config/custom_components/` and restart Home Assistant.
 
 ## Configuration
 
-1. Get a free MAP_KEY: <https://firms.modaps.eosdis.nasa.gov/api/map_key/>.
-2. Add the **Fire Hotspots** integration, enter the key and pick a country.
-   Boundaries are downloaded once and cached in `.storage/fire_hotspots/`.
-3. Tick regions and/or "Whole country".
+Get a free [MAP_KEY][map-key] and select the button below:
 
-Options: regions, time window (1–96 h, default 24), minimum confidence
-(default low), satellite sources (default all four), update interval
-(10–180 min, default 30), show on map (default off). The time window,
-confidence, interval and map toggle are also exposed as configuration
-entities on the device page.
+[![Add Fire Hotspots][install-image]][install-url]
 
-## Automations and map
+<details>
+  <summary>If the button doesn't work, add the integration manually</summary>
+
+1. Open **Settings** → **Devices & services**.
+2. Select **Add integration** and search for **Fire Hotspots**.
+3. Follow the setup steps.
+
+</details>
+
+Enter the MAP_KEY and pick a country. Boundaries are downloaded once (up to a
+minute for large countries) and cached in `.storage/fire_hotspots/`. Then tick
+regions and/or "Whole country". Each country is a separate integration entry.
+
+<img src="./media/options-flow.png" alt="Region selection" width="500">
+
+Options (the **Configure** button): regions, time window (1–96 h, default 24),
+minimum confidence (default low), satellite sources (default all four), update
+interval (10–180 min, default 30), show on map (default off).
+
+The time window, confidence, interval and map toggle are also exposed as
+configuration entities on the device page:
+
+<img src="./media/config-entities.png" alt="Configuration block on the device" width="400">
+
+## Automations
 
 A ready-made blueprint sends a mobile notification about new hotspots with an
 optional distance-from-home filter:
 
-[![Import blueprint](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fnew_hotspots_notify.yaml)
+[![Import blueprint][blueprint-image]][blueprint-url]
 
-With "Show on map" enabled, a map card shows every hotspot:
+## Hotspots on the map
+
+With "Show on map" enabled, hotspots appear on the built-in Home Assistant map
+and on a map card:
 
 ```yaml
 type: map
@@ -65,18 +114,28 @@ geo_location_sources:
 auto_fit: true
 ```
 
+![Hotspots on the map](./media/map.png)
+
 ## Counting
 
 Polls the FIRMS Area API every 30 minutes (configurable), one request per
 source; force a refresh with the `homeassistant.update_entity` action. Each
 detection is assigned to a region by polygon; detections outside the country
-are dropped. Defaults reproduce [SaveEcoBot](https://www.saveecobot.com/analytics/fires)'s
+are dropped. Defaults reproduce [SaveEcoBot][saveecobot]'s
 counts (all sources, no confidence filter, no cross-satellite deduplication,
 rolling 24 h). "Whole country" is the sum of its regions. Occupied territories
 of Ukraine are counted within Ukraine.
 
 Russia and Belarus are not supported as aggressor states in the war against
 Ukraine.
+
+## Removal
+
+1. Open **Settings** → **Devices & services**.
+2. Select **Fire Hotspots**.
+3. Open the **⋮** menu of the country entry and select **Delete**.
+4. Remove the integration from HACS and restart Home Assistant if you no
+   longer want the custom component installed.
 
 ## Attribution and licenses
 
@@ -89,3 +148,27 @@ Ukraine.
   the respective country dataset.
 - "NASA" is used only to identify the data source and does not imply
   endorsement.
+
+<!-- Badges -->
+
+[gh-release-url]: https://github.com/tarasholub/ha-fire-hotspots/releases/latest
+[gh-release-image]: https://img.shields.io/github/v/release/tarasholub/ha-fire-hotspots?style=flat-square
+[gh-downloads-url]: https://github.com/tarasholub/ha-fire-hotspots/releases
+[gh-downloads-image]: https://img.shields.io/github/downloads/tarasholub/ha-fire-hotspots/total?style=flat-square
+[hacs-url]: https://github.com/hacs/integration
+[hacs-image]: https://img.shields.io/badge/hacs-custom-orange.svg?style=flat-square
+[license-url]: LICENSE
+[license-image]: https://img.shields.io/github/license/tarasholub/ha-fire-hotspots?style=flat-square
+
+<!-- References -->
+
+[firms]: https://firms.modaps.eosdis.nasa.gov/
+[geoboundaries]: https://www.geoboundaries.org/
+[saveecobot]: https://www.saveecobot.com/analytics/fires
+[map-key]: https://firms.modaps.eosdis.nasa.gov/api/map_key/
+[hacs-install-url]: https://my.home-assistant.io/redirect/hacs_repository/?owner=tarasholub&repository=ha-fire-hotspots&category=integration
+[hacs-install-image]: https://my.home-assistant.io/badges/hacs_repository.svg
+[install-url]: https://my.home-assistant.io/redirect/config_flow_start/?domain=fire_hotspots
+[install-image]: https://my.home-assistant.io/badges/config_flow_start.svg
+[blueprint-url]: https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fnew_hotspots_notify.yaml
+[blueprint-image]: https://my.home-assistant.io/badges/blueprint_import.svg
