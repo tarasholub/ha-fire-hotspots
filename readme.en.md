@@ -136,6 +136,20 @@ entities:
 ```
 
 ```yaml
+type: markdown
+title: 🔥 Hotspots on the map
+content: >-
+  {% for s in states.geo_location
+     | selectattr('attributes.source', 'eq', 'fire_hotspots')
+     | sort(attribute='attributes.acquired', reverse=true) %}
+  - **{{ s.attributes.region_name }}** — {{ s.attributes.summary }}
+  {%- if s.state not in ('unknown', 'unavailable') %}, {{ s.state }} km from home{% endif %}
+  {% else %}
+  No hotspots 🎉
+  {% endfor %}
+```
+
+```yaml
 type: conditional
 conditions:
   - condition: state

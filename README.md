@@ -206,6 +206,23 @@ card:
     {{ states('sensor.ukraina_nearest_hotspot_dacha') }} км.
 ```
 
+Список осередків з деталями — вся інформація без кліків по маркерах
+(потрібен увімкнений тогл «Показувати на мапі»):
+
+```yaml
+type: markdown
+title: 🔥 Осередки на мапі
+content: >-
+  {% for s in states.geo_location
+     | selectattr('attributes.source', 'eq', 'fire_hotspots')
+     | sort(attribute='attributes.acquired', reverse=true) %}
+  - **{{ s.attributes.region_name }}** — {{ s.attributes.summary }}
+  {%- if s.state not in ('unknown', 'unavailable') %}, {{ s.state }} км від дому{% endif %}
+  {% else %}
+  Осередків немає 🎉
+  {% endfor %}
+```
+
 Динаміка за дві доби:
 
 ```yaml
