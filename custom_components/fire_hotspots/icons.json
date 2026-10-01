@@ -23,6 +23,12 @@
       },
       "nearest_hotspot": {
         "default": "mdi:map-marker-distance"
+      },
+      "last_detection": {
+        "default": "mdi:clock-outline"
+      },
+      "total_frp": {
+        "default": "mdi:heat-wave"
       }
     },
     "event": {

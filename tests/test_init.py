@@ -79,6 +79,16 @@ async def test_entities(
     assert hass.states.get(_entity_id(hass, "new")).state == "unknown"
     assert hass.states.async_all("geo_location") == []  # map disabled
 
+    kyiv = hass.states.get(_entity_id(hass, "count_ua-30"))
+    assert kyiv.attributes["frp_sum"] == 8.4  # two hotspots, 4.2 MW each
+    assert kyiv.attributes["latest_acquired"]
+    kherson = hass.states.get(_entity_id(hass, "count_ua-65"))
+    assert kherson.attributes["frp_sum"] == 0
+    assert kherson.attributes["latest_acquired"] is None
+    assert float(hass.states.get(_entity_id(hass, "frp")).state) == 12.6
+    last = hass.states.get(_entity_id(hass, "last"))
+    assert last.state == kyiv.attributes["latest_acquired"]
+
 
 async def test_entity_names(
     hass: HomeAssistant,
