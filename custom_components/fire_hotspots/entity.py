@@ -17,6 +17,8 @@ KIND_COUNT = "count"
 KIND_FIRE = "fire"
 KEY_NEAREST = "nearest"
 KEY_NEW = "new"
+KEY_LAST = "last"
+KEY_FRP = "frp"
 
 
 def region_unique_id(entry_id: str, kind: str, region: str) -> str:
@@ -26,7 +28,12 @@ def region_unique_id(entry_id: str, kind: str, region: str) -> str:
 
 def expected_unique_ids(entry_id: str, regions: list[str]) -> set[str]:
     """Return all unique ids an entry should have for the selected regions."""
-    ids = {f"{entry_id}_{KEY_NEAREST}", f"{entry_id}_{KEY_NEW}"}
+    ids = {
+        f"{entry_id}_{KEY_NEAREST}",
+        f"{entry_id}_{KEY_NEW}",
+        f"{entry_id}_{KEY_LAST}",
+        f"{entry_id}_{KEY_FRP}",
+    }
     ids.update(
         region_unique_id(entry_id, kind, region)
         for region in regions

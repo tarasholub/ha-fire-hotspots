@@ -18,12 +18,15 @@ Boundaries: [geoBoundaries](https://www.geoboundaries.org/).
 
 Per selected region (and "Whole country" if selected):
 
-- `sensor` **Hotspots: _region_** — hotspots within the time window.
+- `sensor` **Hotspots: _region_** — hotspots within the time window; attributes
+  `frp_sum` (MW) and `latest_acquired`.
 - `binary_sensor` (safety) **Fire: _region_** — unsafe while there is at least one.
 
 Per country:
 
 - `sensor` **Nearest hotspot** (km) — from Home Assistant home to the nearest monitored hotspot.
+- `sensor` **Last detection** — acquisition time of the newest monitored hotspot.
+- `sensor` **Total fire radiative power** (MW) — summed FRP of all monitored hotspots.
 - `event` **New hotspots** — `detected` once per region with new hotspots; attributes `region`, `region_name`, `count`, `detections` (up to 50, nearest first).
 - `geo_location` — one map marker per hotspot (off by default).
 

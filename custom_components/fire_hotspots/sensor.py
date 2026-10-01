@@ -9,12 +9,27 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfLength
+from homeassistant.const import UnitOfLength, UnitOfPower
 
-from .const import ATTR_ACQUIRED, ATTR_REGION
-from .entity import KEY_NEAREST, KIND_COUNT, FirmsEntity, FirmsRegionEntity
+from .const import (
+    ATTR_ACQUIRED,
+    ATTR_FRP_SUM,
+    ATTR_LATEST_ACQUIRED,
+    ATTR_REGION,
+    WHOLE_COUNTRY,
+)
+from .entity import (
+    KEY_FRP,
+    KEY_LAST,
+    KEY_NEAREST,
+    KIND_COUNT,
+    FirmsEntity,
+    FirmsRegionEntity,
+)
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -32,7 +47,11 @@ async def async_setup_entry(
     """Set up sensors."""
     del hass
     coordinator = entry.runtime_data.coordinator
-    entities: list[SensorEntity] = [NearestHotspotSensor(coordinator)]
+    entities: list[SensorEntity] = [
+        NearestHotspotSensor(coordinator),
+        LastDetectionSensor(coordinator),
+        TotalFrpSensor(coordinator),
+    ]
     entities.extend(
         HotspotCountSensor(coordinator, region)
         for region in coordinator.settings.regions
@@ -54,6 +73,57 @@ class HotspotCountSensor(FirmsRegionEntity, SensorEntity):
     def native_value(self) -> int:
         """Number of hotspots."""
         return self.coordinator.data.counts.get(self.region, 0)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, float | str | None]:
+        """Total FRP and newest acquisition time of the region's hotspots."""
+        detections = self.coordinator.data.detections
+        if self.region != WHOLE_COUNTRY:
+            detections = [d for d in detections if d.region == self.region]
+        latest = detections[-1].hotspot.acquired if detections else None
+        return {
+            ATTR_FRP_SUM: round(sum(d.hotspot.frp or 0.0 for d in detections), 1),
+            ATTR_LATEST_ACQUIRED: latest.isoformat() if latest else None,
+        }
+
+
+class LastDetectionSensor(FirmsEntity, SensorEntity):
+    """Acquisition time of the newest detection in the monitored regions."""
+
+    _attr_translation_key = "last_detection"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator: FirmsCoordinator) -> None:
+        """Initialize the sensor."""
+        entry_id = coordinator.config_entry.entry_id
+        super().__init__(coordinator, f"{entry_id}_{KEY_LAST}")
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Acquisition time of the newest detection; detections are sorted."""
+        detections = self.coordinator.data.detections
+        return detections[-1].hotspot.acquired if detections else None
+
+
+class TotalFrpSensor(FirmsEntity, SensorEntity):
+    """Total fire radiative power over the monitored regions."""
+
+    _attr_translation_key = "total_frp"
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.MEGA_WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+
+    def __init__(self, coordinator: FirmsCoordinator) -> None:
+        """Initialize the sensor."""
+        entry_id = coordinator.config_entry.entry_id
+        super().__init__(coordinator, f"{entry_id}_{KEY_FRP}")
+
+    @property
+    def native_value(self) -> float:
+        """Sum of FRP (MW) over all detections; 0 without hotspots."""
+        detections = self.coordinator.data.detections
+        return round(sum(d.hotspot.frp or 0.0 for d in detections), 1)
 
 
 class NearestHotspotSensor(FirmsEntity, SensorEntity):
