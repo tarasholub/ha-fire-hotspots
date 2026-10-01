@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 API_BASE_URL = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
+KEY_STATUS_URL = "https://firms.modaps.eosdis.nasa.gov/mapserver/mapkey_status/"
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)
 MAX_DAY_RANGE = 5
 
@@ -38,6 +39,15 @@ class FirmsAuthError(FirmsError):
 
 class FirmsRateLimitError(FirmsError):
     """MAP_KEY transaction limit is exceeded."""
+
+
+@dataclass(frozen=True, slots=True)
+class KeyStatus:
+    """MAP_KEY usage within the current rate-limit window."""
+
+    used: int
+    limit: int
+    interval: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,3 +175,25 @@ class FirmsClient:
             return []
         msg = f"Unexpected FIRMS response ({status}): {body[:200]}"
         raise FirmsError(msg)
+
+    async def async_get_key_status(self) -> KeyStatus:
+        """MAP_KEY usage in the current window; does not cost a transaction."""
+        try:
+            async with self._session.get(
+                KEY_STATUS_URL,
+                params={"MAP_KEY": self._map_key},
+                timeout=REQUEST_TIMEOUT,
+            ) as response:
+                data = await response.json(content_type=None)
+        except (aiohttp.ClientError, TimeoutError, ValueError) as err:
+            msg = f"Error fetching MAP_KEY status: {err}"
+            raise FirmsConnectionError(msg) from err
+        try:
+            return KeyStatus(
+                used=int(data["current_transactions"]),
+                limit=int(data["transaction_limit"]),
+                interval=str(data["transaction_interval"]),
+            )
+        except (KeyError, TypeError, ValueError) as err:
+            msg = "Unexpected MAP_KEY status response"
+            raise FirmsError(msg) from err

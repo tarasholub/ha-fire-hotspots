@@ -29,6 +29,7 @@ KEY_HOURS = "hours"
 KEY_CONFIDENCE = "confidence"
 KEY_MAP = "map"
 KEY_STALE = "stale"
+KEY_USAGE = "usage"
 
 
 def region_unique_id(entry_id: str, kind: str, region: str) -> str:
@@ -55,6 +56,7 @@ def expected_unique_ids(
         f"{entry_id}_{KEY_CONFIDENCE}",
         f"{entry_id}_{KEY_MAP}",
         f"{entry_id}_{KEY_STALE}",
+        f"{entry_id}_{KEY_USAGE}",
     }
     ids.update(
         region_unique_id(entry_id, kind, region)

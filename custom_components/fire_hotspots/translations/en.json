@@ -127,6 +127,9 @@
       },
       "zone_nearest": {
         "name": "Nearest hotspot: {zone}"
+      },
+      "key_usage": {
+        "name": "API transactions used"
       }
     },
     "event": {

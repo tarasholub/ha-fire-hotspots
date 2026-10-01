@@ -9,6 +9,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from custom_components.fire_hotspots.api import (
     API_BASE_URL,
+    KEY_STATUS_URL,
     FirmsAuthError,
     FirmsClient,
     FirmsConnectionError,
@@ -133,3 +134,25 @@ async def test_client_connection_error(
     client = FirmsClient(async_get_clientsession(hass), "key")
     with pytest.raises(FirmsConnectionError):
         await client.async_get_hotspots("VIIRS_SNPP_NRT", BBOX)
+
+
+async def test_key_status(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Key status endpoint is parsed; malformed payloads raise FirmsError."""
+    aioclient_mock.get(
+        KEY_STATUS_URL,
+        json={
+            "transaction_limit": 5000,
+            "current_transactions": 42,
+            "transaction_interval": "10 minutes",
+        },
+    )
+    client = FirmsClient(async_get_clientsession(hass), "key")
+    status = await client.async_get_key_status()
+    assert (status.used, status.limit, status.interval) == (42, 5000, "10 minutes")
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.get(KEY_STATUS_URL, json={"unexpected": True})
+    with pytest.raises(FirmsError):
+        await client.async_get_key_status()

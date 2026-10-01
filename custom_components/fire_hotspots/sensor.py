@@ -9,7 +9,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import UnitOfLength, UnitOfPower
+from homeassistant.const import EntityCategory, UnitOfLength, UnitOfPower
 
 from .const import (
     ATTR_ACQUIRED,
@@ -23,6 +23,7 @@ from .entity import (
     KEY_FRP,
     KEY_LAST,
     KEY_NEAREST,
+    KEY_USAGE,
     KIND_COUNT,
     KIND_ZONE_COUNT,
     KIND_ZONE_NEAREST,
@@ -55,6 +56,7 @@ async def async_setup_entry(
         NearestHotspotSensor(coordinator),
         LastDetectionSensor(coordinator),
         TotalFrpSensor(coordinator),
+        KeyUsageSensor(coordinator),
     ]
     entities.extend(
         HotspotCountSensor(coordinator, region)
@@ -181,6 +183,33 @@ class TotalFrpSensor(FirmsEntity, SensorEntity):
         """Sum of FRP (MW) over all detections; 0 without hotspots."""
         detections = self.coordinator.data.detections
         return round(sum(d.hotspot.frp or 0.0 for d in detections), 1)
+
+
+class KeyUsageSensor(FirmsEntity, SensorEntity):
+    """MAP_KEY transactions used in the current rate-limit window."""
+
+    _attr_translation_key = "key_usage"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: FirmsCoordinator) -> None:
+        """Initialize the sensor."""
+        entry_id = coordinator.config_entry.entry_id
+        super().__init__(coordinator, f"{entry_id}_{KEY_USAGE}")
+
+    @property
+    def native_value(self) -> int | None:
+        """Transactions used; unknown while the status endpoint is down."""
+        status = self.coordinator.data.key_status
+        return status.used if status else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, int | str]:
+        """Limit and window of the rate limit."""
+        status = self.coordinator.data.key_status
+        if status is None:
+            return {}
+        return {"limit": status.limit, "interval": status.interval}
 
 
 class NearestHotspotSensor(FirmsEntity, SensorEntity):

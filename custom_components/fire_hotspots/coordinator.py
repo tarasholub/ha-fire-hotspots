@@ -22,6 +22,7 @@ from .api import (
     FirmsError,
     FirmsRateLimitError,
     Hotspot,
+    KeyStatus,
 )
 from .boundaries import BBox, CountryBoundaries, distance_km
 from .const import (
@@ -172,6 +173,7 @@ class FirmsData:
     new: dict[str, list[Detection]] = field(default_factory=dict)
     zones: dict[str, ZoneData] = field(default_factory=dict)
     latest_by_source: dict[str, datetime | None] = field(default_factory=dict)
+    key_status: KeyStatus | None = None
 
 
 def zone_bbox(zone: WatchZone) -> BBox:
@@ -426,6 +428,10 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
             )
         )
         data.latest_by_source = latest_by_source
+        try:
+            data.key_status = await self.client.async_get_key_status()
+        except FirmsError as err:
+            LOGGER.debug("MAP_KEY status unavailable: %s", err)
         self._seen = {d.id for d in data.detections} | {
             d.id for zone_data in data.zones.values() for d in zone_data.detections
         }

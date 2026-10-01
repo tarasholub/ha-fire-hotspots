@@ -12,7 +12,7 @@ import pytest
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.fire_hotspots.api import Hotspot
+from custom_components.fire_hotspots.api import Hotspot, KeyStatus
 from custom_components.fire_hotspots.boundaries import CountryBoundaries, load_cached
 from custom_components.fire_hotspots.const import (
     CONF_COUNTRY,
@@ -113,9 +113,16 @@ def config_entry() -> MockConfigEntry:
 @pytest.fixture
 def mock_hotspots() -> Generator[AsyncMock]:
     """Patch FIRMS fetching; set .return_value to a list of hotspots."""
-    with patch(
-        "custom_components.fire_hotspots.api.FirmsClient.async_get_hotspots",
-        new_callable=AsyncMock,
-    ) as mock:
+    with (
+        patch(
+            "custom_components.fire_hotspots.api.FirmsClient.async_get_hotspots",
+            new_callable=AsyncMock,
+        ) as mock,
+        patch(
+            "custom_components.fire_hotspots.api.FirmsClient.async_get_key_status",
+            new_callable=AsyncMock,
+            return_value=KeyStatus(used=16, limit=5000, interval="10 minutes"),
+        ),
+    ):
         mock.return_value = []
         yield mock

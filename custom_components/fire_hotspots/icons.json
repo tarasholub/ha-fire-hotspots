@@ -44,6 +44,9 @@
       },
       "zone_nearest": {
         "default": "mdi:map-marker-distance"
+      },
+      "key_usage": {
+        "default": "mdi:counter"
       }
     },
     "event": {

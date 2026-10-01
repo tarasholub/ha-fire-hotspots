@@ -105,6 +105,11 @@ async def test_entities(
     last = hass.states.get(_entity_id(hass, "last"))
     assert last.state == kyiv.attributes["latest_acquired"]
 
+    usage = hass.states.get(_entity_id(hass, "usage"))
+    assert usage.state == "16"
+    assert usage.attributes["limit"] == 5000
+    assert usage.attributes["interval"] == "10 minutes"
+
 
 async def test_entity_names(
     hass: HomeAssistant,
