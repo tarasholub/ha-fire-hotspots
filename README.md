@@ -128,6 +128,18 @@ scripts/test
 
 Або відкрийте репозиторій у Dev Container (`.devcontainer.json`).
 
+### Через Docker
+
+```bash
+scripts/docker           # HA на http://localhost:8123, логи в терміналі
+scripts/docker restart   # після змін у коді
+scripts/docker down      # зупинити
+```
+
+Інтеграція монтується в контейнер напряму з `custom_components/fire_hotspots`,
+конфігурація HA зберігається в `config/` (у git потрапляє лише
+`configuration.yaml`). Інша версія HA: `HA_VERSION=2026.10.0 scripts/docker`.
+
 ## Атрибуція та ліцензії
 
 - Код: [MIT](LICENSE).

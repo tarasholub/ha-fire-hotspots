@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# scripts/docker: run Home Assistant with this integration in Docker.
+#   scripts/docker          start (or update) and follow logs
+#   scripts/docker restart  restart after code changes
+#   scripts/docker down     stop and remove the container
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+case "${1:-up}" in
+  up)
+    docker compose up -d
+    echo "==> Home Assistant: http://localhost:8123 (Ctrl+C stops following logs)"
+    docker compose logs -f homeassistant
+    ;;
+  restart)
+    docker compose restart homeassistant
+    docker compose logs -f --since 10s homeassistant
+    ;;
+  down)
+    docker compose down
+    ;;
+  *)
+    echo "Usage: scripts/docker [up|restart|down]" >&2
+    exit 1
+    ;;
+esac
