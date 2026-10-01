@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
+from homeassistant.const import EntityCategory
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -19,6 +20,10 @@ KEY_NEAREST = "nearest"
 KEY_NEW = "new"
 KEY_LAST = "last"
 KEY_FRP = "frp"
+KEY_INTERVAL = "interval"
+KEY_HOURS = "hours"
+KEY_CONFIDENCE = "confidence"
+KEY_MAP = "map"
 
 
 def region_unique_id(entry_id: str, kind: str, region: str) -> str:
@@ -33,6 +38,10 @@ def expected_unique_ids(entry_id: str, regions: list[str]) -> set[str]:
         f"{entry_id}_{KEY_NEW}",
         f"{entry_id}_{KEY_LAST}",
         f"{entry_id}_{KEY_FRP}",
+        f"{entry_id}_{KEY_INTERVAL}",
+        f"{entry_id}_{KEY_HOURS}",
+        f"{entry_id}_{KEY_CONFIDENCE}",
+        f"{entry_id}_{KEY_MAP}",
     }
     ids.update(
         region_unique_id(entry_id, kind, region)
@@ -68,6 +77,25 @@ class FirmsEntity(CoordinatorEntity[FirmsCoordinator]):
             entry_type=DeviceEntryType.SERVICE,
             configuration_url=FIRMS_MAP_URL,
         )
+
+
+class FirmsConfigEntity(FirmsEntity):
+    """Configuration entity that writes one config entry option."""
+
+    _attr_entity_category = EntityCategory.CONFIG
+
+    @property
+    def available(self) -> bool:
+        """Stay operable even while FIRMS requests fail."""
+        return True
+
+    def _set_option(self, key: str, value: Any) -> None:
+        """Persist an option and reload the entry to apply it."""
+        entry = self.coordinator.config_entry
+        self.hass.config_entries.async_update_entry(
+            entry, options={**entry.options, key: value}
+        )
+        self.hass.config_entries.async_schedule_reload(entry.entry_id)
 
 
 class FirmsRegionEntity(FirmsEntity):

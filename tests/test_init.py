@@ -17,8 +17,10 @@ from custom_components.fire_hotspots.api import (
 )
 from custom_components.fire_hotspots.boundaries import BoundariesError
 from custom_components.fire_hotspots.const import (
+    CONF_MIN_CONFIDENCE,
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
+    CONF_UPDATE_INTERVAL,
     DOMAIN,
 )
 from custom_components.fire_hotspots.coordinator import (
@@ -239,6 +241,48 @@ async def test_auth_error_starts_reauth(
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
     flows = hass.config_entries.flow.async_progress()
     assert any(f["context"]["source"] == "reauth" for f in flows)
+
+
+async def test_config_entities_update_options(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_hotspots: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """Config entities on the device write options and reload the entry."""
+    await _setup(hass, config_entry)
+
+    await hass.services.async_call(
+        "number",
+        "set_value",
+        {"entity_id": _entity_id(hass, "interval"), "value": 60},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert config_entry.options[CONF_UPDATE_INTERVAL] == 60
+    assert config_entry.runtime_data.coordinator.update_interval == timedelta(
+        minutes=60
+    )
+
+    await hass.services.async_call(
+        "select",
+        "select_option",
+        {"entity_id": _entity_id(hass, "confidence"), "option": "high"},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert config_entry.options[CONF_MIN_CONFIDENCE] == "high"
+    assert hass.states.get(_entity_id(hass, "confidence")).state == "high"
+
+    await hass.services.async_call(
+        "switch",
+        "turn_on",
+        {"entity_id": _entity_id(hass, "map")},
+        blocking=True,
+    )
+    await hass.async_block_till_done()
+    assert config_entry.options[CONF_SHOW_ON_MAP] is True
+    assert hass.states.get(_entity_id(hass, "map")).state == "on"
 
 
 async def test_rate_limit_opens_and_closes_issue(

@@ -45,7 +45,9 @@ HACS → Custom repositories → `https://github.com/tarasholub/ha-fire-hotspots
 
 Options: regions, time window (1–96 h, default 24), minimum confidence
 (default low), satellite sources (default all four), update interval
-(10–180 min, default 30), show on map (default off).
+(10–180 min, default 30), show on map (default off). The time window,
+confidence, interval and map toggle are also exposed as configuration
+entities on the device page.
 
 ## Automations and map
 
