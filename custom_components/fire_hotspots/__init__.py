@@ -7,13 +7,19 @@ from typing import TYPE_CHECKING
 from homeassistant.const import Platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.storage import Store
 
 from .api import FirmsClient
 from .boundaries import BoundariesError
-from .const import CONF_COUNTRY, CONF_MAP_KEY
-from .coordinator import STORAGE_VERSION, FirmsCoordinator, seen_store_key
+from .const import CONF_COUNTRY, CONF_MAP_KEY, DOMAIN
+from .coordinator import (
+    STORAGE_VERSION,
+    FirmsCoordinator,
+    rate_limit_issue_id,
+    seen_store_key,
+)
 from .data import FirmsRuntimeData
 from .entity import expected_unique_ids
 from .helpers import async_get_boundaries
@@ -61,7 +67,8 @@ def _remove_stale_entities(
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> None:
-    """Remove persisted detections of a deleted entry."""
+    """Remove persisted detections and open issues of a deleted entry."""
+    ir.async_delete_issue(hass, DOMAIN, rate_limit_issue_id(entry.entry_id))
     await Store(hass, STORAGE_VERSION, seen_store_key(entry.entry_id)).async_remove()
 
 

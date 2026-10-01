@@ -11,11 +11,18 @@ from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import FirmsAuthError, FirmsClient, FirmsError, Hotspot
+from .api import (
+    FirmsAuthError,
+    FirmsClient,
+    FirmsError,
+    FirmsRateLimitError,
+    Hotspot,
+)
 from .boundaries import BBox, CountryBoundaries, distance_km
 from .const import (
     CONF_HOURS,
@@ -42,6 +49,11 @@ STORAGE_SAVE_DELAY = 10  # seconds
 def seen_store_key(entry_id: str) -> str:
     """Storage key for detections already reported for an entry."""
     return f"{DOMAIN}.{entry_id}.seen"
+
+
+def rate_limit_issue_id(entry_id: str) -> str:
+    """Repairs issue id for a rate-limited entry."""
+    return f"rate_limit_{entry_id}"
 
 
 if TYPE_CHECKING:
@@ -240,12 +252,26 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
             for source in s.sources
             for box in query_boxes(self.boundaries, s)
         ]
+        entry_id = self.config_entry.entry_id
         try:
             results = await asyncio.gather(*requests)
         except FirmsAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
+        except FirmsRateLimitError as err:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                rate_limit_issue_id(entry_id),
+                is_fixable=False,
+                is_persistent=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="rate_limit",
+                translation_placeholders={"country": self.config_entry.title},
+            )
+            raise UpdateFailed(str(err)) from err
         except FirmsError as err:
             raise UpdateFailed(str(err)) from err
+        ir.async_delete_issue(self.hass, DOMAIN, rate_limit_issue_id(entry_id))
 
         config = self.hass.config
         home = (config.latitude, config.longitude) if config.latitude else None

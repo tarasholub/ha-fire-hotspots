@@ -132,5 +132,11 @@
         }
       }
     }
+  },
+  "issues": {
+    "rate_limit": {
+      "title": "NASA FIRMS rate limit reached",
+      "description": "FIRMS temporarily rejected requests for {country} because the MAP_KEY hit its rate limit. Updates resume automatically; consider a longer update interval or fewer satellite sources if this repeats."
+    }
   }
 }
