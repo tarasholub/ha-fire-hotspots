@@ -71,6 +71,7 @@ from .const import (
     SOURCE_VIIRS_SNPP,
     WHOLE_COUNTRY,
 )
+from .coordinator import point_zone_id
 from .countries import COUNTRIES, EXCLUDED_COUNTRIES, country_name
 from .helpers import async_get_boundaries
 
@@ -368,19 +369,29 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
         if user_input is not None:
             name = user_input[CONF_POINT_NAME].strip()
             location = user_input[CONF_POINT_LOCATION]
-            if not name or any(p["name"] == name for p in points):
+            new_id = point_zone_id(name)
+            # Entity ids are built from the slug, so names that only differ
+            # in script or punctuation ("Дача" vs "Dacha") still collide.
+            if (
+                not name
+                or new_id == point_zone_id("")
+                or any(point_zone_id(p["name"]) == new_id for p in points)
+            ):
                 errors[CONF_POINT_NAME] = "duplicate_point"
             else:
+                radius_km = min(
+                    MAX_ZONE_RADIUS_KM,
+                    max(
+                        MIN_ZONE_RADIUS_KM,
+                        location.get("radius", DEFAULT_ZONE_RADIUS_KM * 1000) / 1000,
+                    ),
+                )
                 points.append(
                     {
                         "name": name,
                         "latitude": location["latitude"],
                         "longitude": location["longitude"],
-                        "radius": round(
-                            location.get("radius", DEFAULT_ZONE_RADIUS_KM * 1000)
-                            / 1000,
-                            1,
-                        ),
+                        "radius": round(radius_km, 1),
                     }
                 )
                 return self.async_create_entry(

@@ -50,6 +50,9 @@ _STATIC_REGISTERED = f"{DOMAIN}_static_registered"
 async def async_setup_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> bool:
     """Set up Fire Hotspots from a config entry."""
     if not hass.data.get(_STATIC_REGISTERED):
+        # Set the flag before awaiting: parallel entry setups must not
+        # register the same path twice.
+        hass.data[_STATIC_REGISTERED] = True
         await hass.http.async_register_static_paths(
             [
                 StaticPathConfig(
@@ -58,7 +61,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> boo
                 )
             ]
         )
-        hass.data[_STATIC_REGISTERED] = True
     try:
         boundaries = await async_get_boundaries(hass, entry.data[CONF_COUNTRY])
     except BoundariesError as err:

@@ -342,7 +342,9 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
         """Settings that define which detections are in scope."""
         s = self.settings
         points = sorted(
-            f"{p['name']}:{p['latitude']}:{p['longitude']}:{p['radius']}"
+            ":".join(
+                str(p.get(key)) for key in ("name", "latitude", "longitude", "radius")
+            )
             for p in s.points
         )
         return "|".join(
@@ -358,17 +360,21 @@ class FirmsCoordinator(DataUpdateCoordinator[FirmsData]):
 
     @callback
     def watch_zones(self) -> list[WatchZone]:
-        """Watched zones and points; missing zone entities are skipped."""
-        zones = [
-            WatchZone(
-                zone_id=point_zone_id(point["name"]),
-                name=point["name"],
-                latitude=float(point["latitude"]),
-                longitude=float(point["longitude"]),
-                radius=float(point["radius"]),
-            )
-            for point in self.settings.points
-        ]
+        """Watched zones and points; broken points and missing zones skipped."""
+        zones = []
+        for point in self.settings.points:
+            try:
+                zones.append(
+                    WatchZone(
+                        zone_id=point_zone_id(point["name"]),
+                        name=point["name"],
+                        latitude=float(point["latitude"]),
+                        longitude=float(point["longitude"]),
+                        radius=float(point["radius"]),
+                    )
+                )
+            except KeyError, TypeError, ValueError:
+                LOGGER.warning("Invalid watch point %s, skipping", point)
         for zone_id in self.settings.zones:
             state = self.hass.states.get(zone_id)
             if state is None or "latitude" not in state.attributes:

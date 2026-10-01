@@ -392,7 +392,7 @@ async def test_watch_point_add_and_remove(
         {"name": "Дача", "latitude": 50.1, "longitude": 30.2, "radius": 15.0}
     ]
 
-    # duplicate names are rejected
+    # "Dacha" slugifies to the same entity ids as "Дача" and is rejected
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"], {"next_step_id": "add_point"}
@@ -400,12 +400,27 @@ async def test_watch_point_add_and_remove(
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         {
-            "name": "Дача",
+            "name": "Dacha",
             "location": {"latitude": 51.0, "longitude": 31.0, "radius": 5000},
         },
     )
     assert result["errors"] == {"name": "duplicate_point"}
-    hass.config_entries.options.async_abort(result["flow_id"])
+
+    # a tiny radius picked on the map is clamped to the minimum
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            "name": "Ліс",
+            "location": {"latitude": 51.0, "longitude": 31.0, "radius": 100},
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert config_entry.options[CONF_POINTS][1] == {
+        "name": "Ліс",
+        "latitude": 51.0,
+        "longitude": 31.0,
+        "radius": 1.0,
+    }
 
     result = await hass.config_entries.options.async_init(config_entry.entry_id)
     assert "remove_points" in result["menu_options"]
@@ -413,7 +428,7 @@ async def test_watch_point_add_and_remove(
         result["flow_id"], {"next_step_id": "remove_points"}
     )
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_POINTS: ["Дача"]}
+        result["flow_id"], {CONF_POINTS: ["Дача", "Ліс"]}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert config_entry.options[CONF_POINTS] == []

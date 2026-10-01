@@ -369,7 +369,8 @@ async def test_watch_point_entities(
                     "latitude": KURSK_BORDER[0],
                     "longitude": KURSK_BORDER[1],
                     "radius": 15.0,
-                }
+                },
+                {"name": "Broken"},  # malformed point must not break setup
             ],
         },
     )
