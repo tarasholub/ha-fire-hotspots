@@ -43,16 +43,20 @@ from .const import (
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
+    CONF_UPDATE_INTERVAL,
     CONFIDENCE_LEVELS,
     DEFAULT_HOURS,
     DEFAULT_MIN_CONFIDENCE,
     DEFAULT_SHOW_ON_MAP,
     DEFAULT_SOURCES,
+    DEFAULT_UPDATE_MINUTES,
     DOMAIN,
     LOGGER,
     MAP_KEY_URL,
     MAX_HOURS,
+    MAX_UPDATE_MINUTES,
     MIN_HOURS,
+    MIN_UPDATE_MINUTES,
     SOURCE_VIIRS_SNPP,
     SOURCES,
     WHOLE_COUNTRY,
@@ -208,6 +212,7 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_MIN_CONFIDENCE: DEFAULT_MIN_CONFIDENCE,
                         CONF_SOURCES: DEFAULT_SOURCES,
                         CONF_SHOW_ON_MAP: DEFAULT_SHOW_ON_MAP,
+                        CONF_UPDATE_INTERVAL: DEFAULT_UPDATE_MINUTES,
                     },
                 )
             errors[CONF_REGIONS] = "no_regions"
@@ -311,6 +316,17 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
                         translation_key=CONF_SOURCES,
                         multiple=True,
                         mode=SelectSelectorMode.LIST,
+                    )
+                ),
+                vol.Required(
+                    CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_MINUTES
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        min=MIN_UPDATE_MINUTES,
+                        max=MAX_UPDATE_MINUTES,
+                        step=1,
+                        unit_of_measurement="min",
+                        mode=NumberSelectorMode.BOX,
                     )
                 ),
                 vol.Required(CONF_SHOW_ON_MAP): BooleanSelector(),

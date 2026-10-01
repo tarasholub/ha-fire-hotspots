@@ -22,7 +22,9 @@ from custom_components.fire_hotspots.const import (
     CONF_REGIONS,
     CONF_SHOW_ON_MAP,
     CONF_SOURCES,
+    CONF_UPDATE_INTERVAL,
     DEFAULT_SOURCES,
+    DEFAULT_UPDATE_MINUTES,
     DOMAIN,
     WHOLE_COUNTRY,
 )
@@ -108,6 +110,7 @@ async def test_user_flow(
     assert result["options"][CONF_REGIONS] == ["UA-32", WHOLE_COUNTRY]
     assert result["options"][CONF_SOURCES] == DEFAULT_SOURCES
     assert result["options"][CONF_MIN_CONFIDENCE] == "low"
+    assert result["options"][CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_MINUTES
     assert result["result"].unique_id == "UA"
     assert mock_setup.called
 
@@ -231,6 +234,7 @@ async def test_options_flow(
         CONF_HOURS: 12,
         CONF_MIN_CONFIDENCE: "nominal",
         CONF_SOURCES: ["MODIS_NRT"],
+        CONF_UPDATE_INTERVAL: 60,
         CONF_SHOW_ON_MAP: True,
     }
     result = await hass.config_entries.options.async_configure(
@@ -252,6 +256,7 @@ async def test_options_flow(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert config_entry.options[CONF_REGIONS] == ["UA-46"]
     assert config_entry.options[CONF_SHOW_ON_MAP] is True
+    assert config_entry.options[CONF_UPDATE_INTERVAL] == 60
 
 
 async def test_options_flow_without_boundaries(

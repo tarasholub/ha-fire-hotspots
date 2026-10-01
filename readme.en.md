@@ -41,11 +41,13 @@ HACS → Custom repositories → `https://github.com/tarasholub/ha-fire-hotspots
 3. Tick regions and/or "Whole country".
 
 Options: regions, time window (1–96 h, default 24), minimum confidence
-(default low), satellite sources (default all four), show on map (default off).
+(default low), satellite sources (default all four), update interval
+(10–180 min, default 30), show on map (default off).
 
 ## Counting
 
-Polls the FIRMS Area API every 30 minutes, one request per source. Each
+Polls the FIRMS Area API every 30 minutes (configurable), one request per
+source; force a refresh with the `homeassistant.update_entity` action. Each
 detection is assigned to a region by polygon; detections outside the country
 are dropped. Defaults reproduce [SaveEcoBot](https://www.saveecobot.com/analytics/fires)'s
 counts (all sources, no confidence filter, no cross-satellite deduplication,

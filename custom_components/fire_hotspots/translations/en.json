@@ -53,12 +53,14 @@
           "hours": "Time window",
           "min_confidence": "Minimum confidence",
           "sources": "Satellite sources",
+          "update_interval": "Update interval",
           "show_on_map": "Show hotspots on the map"
         },
         "data_description": {
           "hours": "Count detections acquired within this many hours.",
           "min_confidence": "Ignore detections below this level. \"Low\" counts everything, like SaveEcoBot.",
           "sources": "VIIRS: 375 m resolution. MODIS: 1 km. All four match SaveEcoBot's counts.",
+          "update_interval": "How often to poll NASA FIRMS, in minutes. New data arrives a few times a day per satellite.",
           "show_on_map": "Adds a map marker per hotspot. Can be hundreds for a whole country."
         }
       }

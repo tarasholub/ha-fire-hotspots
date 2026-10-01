@@ -64,7 +64,9 @@ def test_settings_defaults() -> None:
     assert s.hours == 24
     assert s.day_range == 2
     assert not s.show_on_map
+    assert s.update_minutes == 30
     assert Settings.from_options({"hours": 96}).day_range == 5
+    assert Settings.from_options({"update_interval": 60.0}).update_minutes == 60
 
 
 def test_query_boxes(ukraine: CountryBoundaries) -> None:

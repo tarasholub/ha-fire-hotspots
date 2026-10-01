@@ -1,6 +1,5 @@
 """Constants for the Fire Hotspots integration."""
 
-from datetime import timedelta
 from logging import Logger, getLogger
 from typing import Final
 
@@ -13,8 +12,6 @@ ATTRIBUTION: Final = (
 FIRMS_MAP_URL: Final = "https://firms.modaps.eosdis.nasa.gov/map/"
 MAP_KEY_URL: Final = "https://firms.modaps.eosdis.nasa.gov/api/map_key/"
 
-UPDATE_INTERVAL: Final = timedelta(minutes=30)
-
 # Config entry data
 CONF_MAP_KEY: Final = "map_key"
 CONF_COUNTRY: Final = "country"  # ISO 3166-1 alpha-2, as HA's country selector
@@ -25,6 +22,7 @@ CONF_HOURS: Final = "hours"
 CONF_MIN_CONFIDENCE: Final = "min_confidence"
 CONF_SOURCES: Final = "sources"
 CONF_SHOW_ON_MAP: Final = "show_on_map"
+CONF_UPDATE_INTERVAL: Final = "update_interval"  # minutes
 
 # Pseudo region id for "whole country" (sum of all regions).
 WHOLE_COUNTRY: Final = "country"
@@ -52,9 +50,15 @@ DEFAULT_HOURS: Final = 24
 DEFAULT_MIN_CONFIDENCE: Final = CONFIDENCE_LOW
 DEFAULT_SOURCES: Final = SOURCES
 DEFAULT_SHOW_ON_MAP: Final = False
+DEFAULT_UPDATE_MINUTES: Final = 30
 
 MIN_HOURS: Final = 1
 MAX_HOURS: Final = 96  # FIRMS area API allows up to 5 days per request
+
+# FIRMS allows 5000 transactions per 10 minutes; even the 10-minute minimum
+# stays far below that with one transaction per source per refresh.
+MIN_UPDATE_MINUTES: Final = 10
+MAX_UPDATE_MINUTES: Final = 180
 
 # Event entity
 EVENT_DETECTED: Final = "detected"
