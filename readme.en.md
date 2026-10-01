@@ -104,10 +104,47 @@ configuration entities on the device page:
 
 ## Automations
 
-A ready-made blueprint sends a mobile notification about new hotspots with an
-optional distance-from-home filter:
+Ready-made blueprints send mobile notifications about new hotspots — anywhere
+(with a distance-from-home filter) or within a watched zone's radius:
 
 [![Import blueprint][blueprint-image]][blueprint-url]
+[![Import zone blueprint][blueprint-image]][blueprint-zone-url]
+
+## Dashboard cards
+
+Replace the `entity_id`s with yours (see the integration's device page):
+
+```yaml
+type: entities
+title: 🔥 Fires by region
+entities:
+  - binary_sensor.ukraine_fire_kyiv_oblast
+  - sensor.ukraine_hotspots_kyiv_oblast
+```
+
+```yaml
+type: glance
+entities:
+  - sensor.ukraine_nearest_hotspot
+  - sensor.ukraine_last_detection
+  - sensor.ukraine_total_fire_radiative_power
+  - binary_sensor.ukraine_stale_data
+```
+
+```yaml
+type: conditional
+conditions:
+  - condition: state
+    entity: binary_sensor.ukraine_fire_near_dacha
+    state: "on"
+card:
+  type: markdown
+  content: >-
+    ## 🔥 Hotspots near the dacha
+
+    Within the radius: {{ states('sensor.ukraine_hotspots_near_dacha') }},
+    nearest {{ states('sensor.ukraine_nearest_hotspot_dacha') }} km away.
+```
 
 ## Hotspots on the map
 
@@ -178,4 +215,5 @@ Ukraine.
 [install-url]: https://my.home-assistant.io/redirect/config_flow_start/?domain=fire_hotspots
 [install-image]: https://my.home-assistant.io/badges/config_flow_start.svg
 [blueprint-url]: https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fnew_hotspots_notify.yaml
+[blueprint-zone-url]: https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fzone_hotspots_notify.yaml
 [blueprint-image]: https://my.home-assistant.io/badges/blueprint_import.svg

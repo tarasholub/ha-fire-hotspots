@@ -131,10 +131,12 @@
 
 ## Сповіщення про нові осередки
 
-Готовий blueprint — сповіщення на телефон про нові осередки з фільтром
-відстані від дому:
+Готові blueprint-и — сповіщення на телефон:
 
-[![Імпортувати blueprint][blueprint-image]][blueprint-url]
+| Blueprint | Про що сповіщає | |
+| --- | --- | --- |
+| Нові осередки | Будь-які нові осередки, з фільтром відстані від дому | [![Імпортувати blueprint][blueprint-image]][blueprint-url] |
+| Осередки біля зони | Нові осередки в радіусі зони спостереження | [![Імпортувати blueprint][blueprint-image]][blueprint-zone-url] |
 
 Або власна автоматизація:
 
@@ -156,6 +158,62 @@ automation:
           message: >
             Нових осередків: {{ trigger.to_state.attributes.count }},
             найближчий за {{ trigger.to_state.attributes.detections[0].distance }} км
+```
+
+## Готові картки для дашборду
+
+Підставте свої `entity_id` (знайдіть їх на сторінці пристрою інтеграції).
+
+Огляд регіонів — стан і лічильник поруч:
+
+```yaml
+type: entities
+title: 🔥 Пожежі по регіонах
+entities:
+  - binary_sensor.ukraina_fire_kiivska_oblast
+  - sensor.ukraina_hotspots_kiivska_oblast
+  - binary_sensor.ukraina_fire_khersonska_oblast
+  - sensor.ukraina_hotspots_khersonska_oblast
+```
+
+Зведення по країні:
+
+```yaml
+type: glance
+entities:
+  - sensor.ukraina_nearest_hotspot
+  - sensor.ukraina_last_detection
+  - sensor.ukraina_total_fire_radiative_power
+  - binary_sensor.ukraina_stale_data
+```
+
+Тривога, що з'являється лише коли біля зони є осередки:
+
+```yaml
+type: conditional
+conditions:
+  - condition: state
+    entity: binary_sensor.ukraina_fire_near_dacha
+    state: "on"
+card:
+  type: markdown
+  content: >-
+    ## 🔥 Осередки біля дачі
+
+    У радіусі: {{ states('sensor.ukraina_hotspots_near_dacha') }},
+    найближчий за
+    {{ states('sensor.ukraina_nearest_hotspot_dacha') }} км.
+```
+
+Динаміка за дві доби:
+
+```yaml
+type: history-graph
+title: Осередки за 48 годин
+hours_to_show: 48
+entities:
+  - sensor.ukraina_hotspots_whole_country
+  - sensor.ukraina_total_fire_radiative_power
 ```
 
 ## Осередки на мапі
@@ -264,4 +322,5 @@ scripts/docker down      # зупинити
 [install-url]: https://my.home-assistant.io/redirect/config_flow_start/?domain=fire_hotspots
 [install-image]: https://my.home-assistant.io/badges/config_flow_start.svg
 [blueprint-url]: https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fnew_hotspots_notify.yaml
+[blueprint-zone-url]: https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Ftarasholub%2Fha-fire-hotspots%2Fblob%2Fmain%2Fblueprints%2Fautomation%2Ffire_hotspots%2Fzone_hotspots_notify.yaml
 [blueprint-image]: https://my.home-assistant.io/badges/blueprint_import.svg
