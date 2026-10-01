@@ -1,0 +1,131 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fire Hotspots",
+        "description": "Satellite fire hotspots (data: NASA FIRMS). Get a free MAP_KEY at {map_key_url}.",
+        "data": {
+          "map_key": "MAP_KEY",
+          "country": "Country"
+        },
+        "data_description": {
+          "map_key": "Free NASA FIRMS key. Each update uses one transaction per satellite source.",
+          "country": "Boundaries for this country are downloaded once and cached."
+        }
+      },
+      "regions": {
+        "title": "Regions in {country}",
+        "description": "Choose what to monitor. Each choice gets its own counter and \"fire\" sensor.",
+        "data": {
+          "regions": "Regions"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Update MAP_KEY",
+        "description": "NASA FIRMS rejected the MAP_KEY. Enter a valid one.",
+        "data": {
+          "map_key": "MAP_KEY"
+        }
+      }
+    },
+    "progress": {
+      "download": "Downloading boundaries for {country}. Large countries can take a minute."
+    },
+    "error": {
+      "invalid_auth": "Invalid MAP_KEY.",
+      "cannot_connect": "Failed to connect to NASA FIRMS.",
+      "unknown": "Unexpected error.",
+      "boundaries_unavailable": "Failed to download boundaries. Try again later.",
+      "boundaries_not_found": "No boundary data for this country.",
+      "no_regions": "Select at least one region."
+    },
+    "abort": {
+      "already_configured": "This country is already configured.",
+      "reauth_successful": "MAP_KEY updated."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fire Hotspots settings",
+        "data": {
+          "regions": "Regions",
+          "hours": "Time window",
+          "min_confidence": "Minimum confidence",
+          "sources": "Satellite sources",
+          "show_on_map": "Show hotspots on the map"
+        },
+        "data_description": {
+          "hours": "Count detections acquired within this many hours.",
+          "min_confidence": "Ignore detections below this level. \"Low\" counts everything, like SaveEcoBot.",
+          "sources": "VIIRS: 375 m resolution. MODIS: 1 km. All four match SaveEcoBot's counts.",
+          "show_on_map": "Adds a map marker per hotspot. Can be hundreds for a whole country."
+        }
+      }
+    },
+    "error": {
+      "no_regions": "Select at least one region.",
+      "no_sources": "Select at least one source."
+    },
+    "abort": {
+      "boundaries_unavailable": "Boundaries are not available. Try again later."
+    }
+  },
+  "selector": {
+    "regions": {
+      "options": {
+        "country": "Whole country"
+      }
+    },
+    "min_confidence": {
+      "options": {
+        "low": "Low",
+        "nominal": "Nominal",
+        "high": "High"
+      }
+    },
+    "sources": {
+      "options": {
+        "VIIRS_SNPP_NRT": "VIIRS S-NPP",
+        "VIIRS_NOAA20_NRT": "VIIRS NOAA-20",
+        "VIIRS_NOAA21_NRT": "VIIRS NOAA-21",
+        "MODIS_NRT": "MODIS (Terra/Aqua)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "region_fire": {
+        "name": "Fire: {region}"
+      },
+      "country_fire": {
+        "name": "Fire: whole country"
+      }
+    },
+    "sensor": {
+      "region_hotspots": {
+        "name": "Hotspots: {region}",
+        "unit_of_measurement": "hotspots"
+      },
+      "country_hotspots": {
+        "name": "Hotspots: whole country",
+        "unit_of_measurement": "hotspots"
+      },
+      "nearest_hotspot": {
+        "name": "Nearest hotspot"
+      }
+    },
+    "event": {
+      "new_hotspots": {
+        "name": "New hotspots",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "detected": "Detected"
+            }
+          }
+        }
+      }
+    }
+  }
+}

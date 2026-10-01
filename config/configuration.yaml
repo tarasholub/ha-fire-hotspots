@@ -1,0 +1,7 @@
+# Development configuration for scripts/develop
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.fire_hotspots: debug

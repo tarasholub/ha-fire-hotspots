@@ -1,0 +1,13 @@
+{
+  "domain": "fire_hotspots",
+  "name": "Fire Hotspots",
+  "codeowners": ["@tarasholub"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/tarasholub/ha-fire-hotspots",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/tarasholub/ha-fire-hotspots/issues",
+  "requirements": [],
+  "version": "0.0.0-unreleased"
+}

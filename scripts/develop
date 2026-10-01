@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Create config dir if not present
+if [[ ! -d "${PWD}/config" ]]; then
+    mkdir -p "${PWD}/config"
+    uv run hass --config "${PWD}/config" --script ensure_config
+fi
+
+# Load custom_components from the repo root without symlinks
+export PYTHONPATH="${PYTHONPATH}:${PWD}"
+
+# Start Home Assistant
+uv run hass --config "${PWD}/config" --debug

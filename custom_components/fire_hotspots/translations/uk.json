@@ -1,0 +1,131 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fire Hotspots",
+        "description": "Супутникові осередки пожеж (дані: NASA FIRMS). Безкоштовний MAP_KEY: {map_key_url}.",
+        "data": {
+          "map_key": "MAP_KEY",
+          "country": "Країна"
+        },
+        "data_description": {
+          "map_key": "Безкоштовний ключ NASA FIRMS. Кожне оновлення витрачає одну транзакцію на кожне джерело.",
+          "country": "Межі цієї країни завантажуються один раз і кешуються."
+        }
+      },
+      "regions": {
+        "title": "Регіони: {country}",
+        "description": "Оберіть, що відстежувати. Для кожного вибору буде свій лічильник і сенсор «пожежа».",
+        "data": {
+          "regions": "Регіони"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Оновити MAP_KEY",
+        "description": "NASA FIRMS відхилив MAP_KEY. Введіть дійсний ключ.",
+        "data": {
+          "map_key": "MAP_KEY"
+        }
+      }
+    },
+    "progress": {
+      "download": "Завантажуються межі: {country}. Для великих країн це може тривати до хвилини."
+    },
+    "error": {
+      "invalid_auth": "Недійсний MAP_KEY.",
+      "cannot_connect": "Не вдалося під'єднатися до NASA FIRMS.",
+      "unknown": "Неочікувана помилка.",
+      "boundaries_unavailable": "Не вдалося завантажити межі. Спробуйте пізніше.",
+      "boundaries_not_found": "Для цієї країни немає даних про межі.",
+      "no_regions": "Оберіть принаймні один регіон."
+    },
+    "abort": {
+      "already_configured": "Цю країну вже налаштовано.",
+      "reauth_successful": "MAP_KEY оновлено."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Налаштування Fire Hotspots",
+        "data": {
+          "regions": "Регіони",
+          "hours": "Часове вікно",
+          "min_confidence": "Мінімальна достовірність",
+          "sources": "Супутникові джерела",
+          "show_on_map": "Показувати осередки на мапі"
+        },
+        "data_description": {
+          "hours": "Враховуються виявлення за останні N годин.",
+          "min_confidence": "Ігнорувати виявлення нижче цього рівня. «Низька» — враховувати все, як SaveEcoBot.",
+          "sources": "VIIRS: роздільність 375 м. MODIS: 1 км. Усі чотири дають цифри як у SaveEcoBot.",
+          "show_on_map": "Маркер на мапі для кожного осередку. Для всієї країни їх можуть бути сотні."
+        }
+      }
+    },
+    "error": {
+      "no_regions": "Оберіть принаймні один регіон.",
+      "no_sources": "Оберіть принаймні одне джерело."
+    },
+    "abort": {
+      "boundaries_unavailable": "Межі недоступні. Спробуйте пізніше."
+    }
+  },
+  "selector": {
+    "regions": {
+      "options": {
+        "country": "Вся країна"
+      }
+    },
+    "min_confidence": {
+      "options": {
+        "low": "Низька",
+        "nominal": "Номінальна",
+        "high": "Висока"
+      }
+    },
+    "sources": {
+      "options": {
+        "VIIRS_SNPP_NRT": "VIIRS S-NPP",
+        "VIIRS_NOAA20_NRT": "VIIRS NOAA-20",
+        "VIIRS_NOAA21_NRT": "VIIRS NOAA-21",
+        "MODIS_NRT": "MODIS (Terra/Aqua)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "region_fire": {
+        "name": "Пожежа: {region}"
+      },
+      "country_fire": {
+        "name": "Пожежа: вся країна"
+      }
+    },
+    "sensor": {
+      "region_hotspots": {
+        "name": "Осередки: {region}",
+        "unit_of_measurement": "осередків"
+      },
+      "country_hotspots": {
+        "name": "Осередки: вся країна",
+        "unit_of_measurement": "осередків"
+      },
+      "nearest_hotspot": {
+        "name": "Найближчий осередок"
+      }
+    },
+    "event": {
+      "new_hotspots": {
+        "name": "Нові осередки",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "detected": "Виявлено"
+            }
+          }
+        }
+      }
+    }
+  }
+}
