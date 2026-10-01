@@ -8,3 +8,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # pytest is pinned by pytest-homeassistant-custom-component; it gets
+      # bumped together with that package, standalone updates never resolve.
+      - dependency-name: pytest
