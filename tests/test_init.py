@@ -8,11 +8,23 @@ from unittest.mock import patch
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 
-from custom_components.fire_hotspots.api import FirmsAuthError, FirmsConnectionError
+from custom_components.fire_hotspots.api import (
+    FirmsAuthError,
+    FirmsConnectionError,
+    FirmsRateLimitError,
+)
 from custom_components.fire_hotspots.boundaries import BoundariesError
-from custom_components.fire_hotspots.const import CONF_REGIONS, CONF_SHOW_ON_MAP
-from custom_components.fire_hotspots.coordinator import seen_store_key
+from custom_components.fire_hotspots.const import (
+    CONF_REGIONS,
+    CONF_SHOW_ON_MAP,
+    DOMAIN,
+)
+from custom_components.fire_hotspots.coordinator import (
+    rate_limit_issue_id,
+    seen_store_key,
+)
 from custom_components.fire_hotspots.diagnostics import (
     async_get_config_entry_diagnostics,
 )
@@ -227,6 +239,28 @@ async def test_auth_error_starts_reauth(
     assert config_entry.state is ConfigEntryState.SETUP_ERROR
     flows = hass.config_entries.flow.async_progress()
     assert any(f["context"]["source"] == "reauth" for f in flows)
+
+
+async def test_rate_limit_opens_and_closes_issue(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_hotspots: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """A rate-limited refresh opens a repairs issue; recovery closes it."""
+    await _setup(hass, config_entry)
+    registry = ir.async_get(hass)
+    issue_id = rate_limit_issue_id(config_entry.entry_id)
+    assert registry.async_get_issue(DOMAIN, issue_id) is None
+
+    mock_hotspots.side_effect = FirmsRateLimitError("limit")
+    await _refresh(hass, config_entry)
+    assert hass.states.get(_entity_id(hass, "count_ua-30")).state == "unavailable"
+    assert registry.async_get_issue(DOMAIN, issue_id) is not None
+
+    mock_hotspots.side_effect = None
+    await _refresh(hass, config_entry)
+    assert registry.async_get_issue(DOMAIN, issue_id) is None
 
 
 async def test_remove_entry_deletes_store(
