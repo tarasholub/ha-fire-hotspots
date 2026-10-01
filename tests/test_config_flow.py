@@ -107,7 +107,11 @@ async def test_user_flow(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Україна"
     assert result["data"] == {CONF_MAP_KEY: "abc", CONF_COUNTRY: "UA"}
-    assert result["options"][CONF_REGIONS] == ["UA-32", WHOLE_COUNTRY]
+    # whole country expands to every region
+    regions = result["options"][CONF_REGIONS]
+    assert regions[0] == WHOLE_COUNTRY
+    assert len(regions) == 28
+    assert "UA-32" in regions
     assert result["options"][CONF_SOURCES] == DEFAULT_SOURCES
     assert result["options"][CONF_MIN_CONFIDENCE] == "low"
     assert result["options"][CONF_UPDATE_INTERVAL] == DEFAULT_UPDATE_MINUTES
@@ -257,6 +261,38 @@ async def test_options_flow(
     assert config_entry.options[CONF_REGIONS] == ["UA-46"]
     assert config_entry.options[CONF_SHOW_ON_MAP] is True
     assert config_entry.options[CONF_UPDATE_INTERVAL] == 60
+
+
+async def test_options_flow_all_regions_add_whole_country(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_setup: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """Manually picking every region adds the whole-country counter."""
+    config_entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(config_entry.entry_id)
+    selector = result["data_schema"].schema[CONF_REGIONS].config
+    all_regions = [
+        o["value"] for o in selector["options"] if o["value"] != WHOLE_COUNTRY
+    ]
+    assert len(all_regions) == 27
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        {
+            CONF_REGIONS: all_regions,
+            CONF_HOURS: 24,
+            CONF_MIN_CONFIDENCE: "low",
+            CONF_SOURCES: ["MODIS_NRT"],
+            CONF_UPDATE_INTERVAL: 30,
+            CONF_SHOW_ON_MAP: False,
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    regions = config_entry.options[CONF_REGIONS]
+    assert regions[0] == WHOLE_COUNTRY
+    assert len(regions) == 28
 
 
 async def test_options_flow_without_boundaries(

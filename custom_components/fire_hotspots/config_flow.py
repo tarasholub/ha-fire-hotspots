@@ -98,6 +98,20 @@ async def validate_map_key(hass: HomeAssistant, map_key: str) -> str | None:
     return None
 
 
+def normalize_regions(selected: list[str], boundaries: CountryBoundaries) -> list[str]:
+    """
+    Keep the group selection consistent: whole country ⟺ all regions.
+
+    Picking the whole country expands to every region; picking every region
+    adds the whole country. A partial selection stays as is.
+    """
+    all_regions = sorted(boundaries.regions) if boundaries.level != "ADM0" else []
+    chosen = set(selected)
+    if WHOLE_COUNTRY in chosen or (all_regions and chosen >= set(all_regions)):
+        return [WHOLE_COUNTRY, *all_regions]
+    return selected
+
+
 def regions_selector(boundaries: CountryBoundaries, language: str) -> SelectSelector:
     """Checkbox list: whole country first, then regions by localized name."""
     regions = sorted(
@@ -214,7 +228,9 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
                     title=country_name(self._country, self.hass.config.language),
                     data={CONF_MAP_KEY: self._map_key, CONF_COUNTRY: self._country},
                     options={
-                        CONF_REGIONS: user_input[CONF_REGIONS],
+                        CONF_REGIONS: normalize_regions(
+                            user_input[CONF_REGIONS], self._boundaries
+                        ),
                         CONF_HOURS: DEFAULT_HOURS,
                         CONF_MIN_CONFIDENCE: DEFAULT_MIN_CONFIDENCE,
                         CONF_SOURCES: DEFAULT_SOURCES,
@@ -281,6 +297,13 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Manage the options."""
+        try:
+            boundaries = await async_get_boundaries(
+                self.hass, self.config_entry.data[CONF_COUNTRY]
+            )
+        except BoundariesError:
+            return self.async_abort(reason="boundaries_unavailable")
+
         errors: dict[str, str] = {}
         if user_input is not None:
             if not user_input.get(CONF_REGIONS):
@@ -288,14 +311,10 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
             elif not user_input.get(CONF_SOURCES):
                 errors[CONF_SOURCES] = "no_sources"
             else:
+                user_input[CONF_REGIONS] = normalize_regions(
+                    user_input[CONF_REGIONS], boundaries
+                )
                 return self.async_create_entry(data=user_input)
-
-        try:
-            boundaries = await async_get_boundaries(
-                self.hass, self.config_entry.data[CONF_COUNTRY]
-            )
-        except BoundariesError:
-            return self.async_abort(reason="boundaries_unavailable")
         schema = vol.Schema(
             {
                 vol.Required(CONF_REGIONS): regions_selector(

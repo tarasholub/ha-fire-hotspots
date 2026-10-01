@@ -92,7 +92,9 @@ regions and/or "Whole country". Each country is a separate integration entry.
 
 <img src="./media/options-flow.png" alt="Region selection" width="500">
 
-Options (the **Configure** button): regions, time window (1–96 h, default 24),
+Options (the **Configure** button): regions ("Whole country" selects every
+region, and selecting every region adds "Whole country"), time window
+(1–96 h, default 24),
 minimum confidence (default low), satellite sources (default all four), update
 interval (10–180 min, default 30), watch zones with a shared radius
 (1–200 km, default 20), show on map (default off).

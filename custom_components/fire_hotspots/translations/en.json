@@ -15,7 +15,7 @@
       },
       "regions": {
         "title": "Regions in {country}",
-        "description": "Choose what to monitor. Each choice gets its own counter and \"fire\" sensor.",
+        "description": "Choose what to monitor. Each choice gets its own counter and \"fire\" sensor. \"Whole country\" selects every region.",
         "data": {
           "regions": "Regions"
         }
@@ -59,6 +59,7 @@
           "show_on_map": "Show hotspots on the map"
         },
         "data_description": {
+          "regions": "Picking \"Whole country\" selects every region; picking every region adds \"Whole country\".",
           "hours": "Count detections acquired within this many hours.",
           "min_confidence": "Ignore detections below this level. \"Low\" counts everything, like SaveEcoBot.",
           "update_interval": "How often to poll NASA FIRMS, in minutes. New data arrives a few times a day per satellite.",
