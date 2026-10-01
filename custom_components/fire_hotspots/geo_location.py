@@ -8,7 +8,13 @@ from homeassistant.components.geo_location import GeolocationEvent
 from homeassistant.const import UnitOfLength
 from homeassistant.core import callback
 
-from .const import ATTR_REGION, ATTR_REGION_NAME, ATTRIBUTION, DOMAIN
+from .const import (
+    ATTR_REGION,
+    ATTR_REGION_NAME,
+    ATTRIBUTION,
+    DOMAIN,
+    MARKER_ICON_URL,
+)
 from .entity import region_name
 from .event import detection_attributes
 
@@ -87,13 +93,15 @@ class HotspotEntity(GeolocationEvent):
     _attr_source = DOMAIN
     _attr_attribution = ATTRIBUTION
     _attr_icon = "mdi:fire"
+    _attr_entity_picture = MARKER_ICON_URL
     _attr_unit_of_measurement = UnitOfLength.KILOMETERS
 
     def __init__(self, detection: Detection, region: str) -> None:
         """Initialize the entity."""
         hotspot = detection.hotspot
         self.hotspot_id = detection.id
-        self._attr_name = f"{region}, {hotspot.acquired:%d.%m %H:%M} UTC"
+        frp = f", {hotspot.frp:g} MW" if hotspot.frp else ""
+        self._attr_name = f"{region}, {hotspot.acquired:%d.%m %H:%M} UTC{frp}"
         self._attr_latitude = hotspot.latitude
         self._attr_longitude = hotspot.longitude
         if detection.distance is not None:

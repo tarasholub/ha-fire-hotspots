@@ -12,6 +12,10 @@ ATTRIBUTION: Final = (
 FIRMS_MAP_URL: Final = "https://firms.modaps.eosdis.nasa.gov/map/"
 MAP_KEY_URL: Final = "https://firms.modaps.eosdis.nasa.gov/api/map_key/"
 
+# Fire icon served by Home Assistant itself; map markers use it as the
+# entity picture instead of the first letters of the name.
+MARKER_ICON_URL: Final = f"/{DOMAIN}/icon.png"
+
 # Config entry data
 CONF_MAP_KEY: Final = "map_key"
 CONF_COUNTRY: Final = "country"  # ISO 3166-1 alpha-2, as HA's country selector

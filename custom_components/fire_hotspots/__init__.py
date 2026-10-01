@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import Platform
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
@@ -13,7 +15,7 @@ from homeassistant.helpers.storage import Store
 
 from .api import FirmsClient
 from .boundaries import BoundariesError
-from .const import CONF_COUNTRY, CONF_MAP_KEY, DOMAIN
+from .const import CONF_COUNTRY, CONF_MAP_KEY, DOMAIN, MARKER_ICON_URL
 from .coordinator import (
     STORAGE_VERSION,
     FirmsCoordinator,
@@ -41,8 +43,21 @@ PLATFORMS: list[Platform] = [
 ]
 
 
+_STATIC_REGISTERED = f"{DOMAIN}_static_registered"
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> bool:
     """Set up Fire Hotspots from a config entry."""
+    if not hass.data.get(_STATIC_REGISTERED):
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    MARKER_ICON_URL,
+                    str(Path(__file__).parent / "brand" / "icon.png"),
+                )
+            ]
+        )
+        hass.data[_STATIC_REGISTERED] = True
     try:
         boundaries = await async_get_boundaries(hass, entry.data[CONF_COUNTRY])
     except BoundariesError as err:

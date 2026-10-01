@@ -165,6 +165,8 @@ async def test_map_markers(
     kherson = next(s for s in markers if s.attributes["region"] == "UA-65")
     assert float(kherson.state) > 400
     assert kherson.attributes["source"] == "fire_hotspots"
+    assert kherson.attributes["entity_picture"] == "/fire_hotspots/icon.png"
+    assert kherson.attributes["friendly_name"].endswith("4.2 MW")
 
     mock_hotspots.return_value = [make_hotspot(*KYIV)]
     await _refresh(hass, config_entry)
