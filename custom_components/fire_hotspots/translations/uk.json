@@ -104,12 +104,10 @@
     },
     "sensor": {
       "region_hotspots": {
-        "name": "Осередки: {region}",
-        "unit_of_measurement": "осередків"
+        "name": "Осередки: {region}"
       },
       "country_hotspots": {
-        "name": "Осередки: вся країна",
-        "unit_of_measurement": "осередків"
+        "name": "Осередки: вся країна"
       },
       "nearest_hotspot": {
         "name": "Найближчий осередок"

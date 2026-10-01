@@ -104,12 +104,10 @@
     },
     "sensor": {
       "region_hotspots": {
-        "name": "Hotspots: {region}",
-        "unit_of_measurement": "hotspots"
+        "name": "Hotspots: {region}"
       },
       "country_hotspots": {
-        "name": "Hotspots: whole country",
-        "unit_of_measurement": "hotspots"
+        "name": "Hotspots: whole country"
       },
       "nearest_hotspot": {
         "name": "Nearest hotspot"

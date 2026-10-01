@@ -1,0 +1,34 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "region_fire": {
+        "default": "mdi:fire-off",
+        "state": {
+          "on": "mdi:fire-alert"
+        }
+      },
+      "country_fire": {
+        "default": "mdi:fire-off",
+        "state": {
+          "on": "mdi:fire-alert"
+        }
+      }
+    },
+    "sensor": {
+      "region_hotspots": {
+        "default": "mdi:fire"
+      },
+      "country_hotspots": {
+        "default": "mdi:fire"
+      },
+      "nearest_hotspot": {
+        "default": "mdi:map-marker-distance"
+      }
+    },
+    "event": {
+      "new_hotspots": {
+        "default": "mdi:fire-circle"
+      }
+    }
+  }
+}
