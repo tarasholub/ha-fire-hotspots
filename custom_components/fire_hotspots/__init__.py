@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.const import Platform
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -24,6 +24,7 @@ from .coordinator import (
     rate_limit_issue_id,
     seen_store_key,
 )
+from .countries import EXCLUDED_COUNTRIES
 from .data import FirmsRuntimeData
 from .entity import expected_unique_ids
 from .helpers import async_get_boundaries
@@ -49,6 +50,9 @@ _STATIC_REGISTERED = f"{DOMAIN}_static_registered"
 
 async def async_setup_entry(hass: HomeAssistant, entry: FirmsConfigEntry) -> bool:
     """Set up Fire Hotspots from a config entry."""
+    if hass.config.country in EXCLUDED_COUNTRIES:
+        msg = "Not available in aggressor states waging war against Ukraine"
+        raise ConfigEntryError(msg)
     if not hass.data.get(_STATIC_REGISTERED):
         # Set the flag before awaiting: parallel entry setups must not
         # register the same path twice.

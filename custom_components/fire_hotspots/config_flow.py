@@ -162,6 +162,8 @@ class FireHotspotsConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Ask for MAP_KEY and country; a known key is reused when omitted."""
+        if self.hass.config.country in EXCLUDED_COUNTRIES:
+            return self.async_abort(reason="unsupported_country")
         known_key = self._known_map_key()
         errors: dict[str, str] = {}
         if self._download_error:

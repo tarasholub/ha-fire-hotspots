@@ -215,6 +215,19 @@ async def test_deselected_region_entities_removed(
     assert hass.states.get(_entity_id(hass, "fire_ua-46")).state == "on"
 
 
+async def test_aggressor_instance_setup_fails(
+    hass: HomeAssistant,
+    config_entry: MockConfigEntry,
+    mock_hotspots: AsyncMock,
+    boundaries_cache: Path,
+) -> None:
+    """An instance relocated to an aggressor state refuses to start."""
+    hass.config.country = "RU"
+    config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(config_entry.entry_id)
+    assert config_entry.state is ConfigEntryState.SETUP_ERROR
+
+
 async def test_setup_retry(
     hass: HomeAssistant,
     config_entry: MockConfigEntry,

@@ -171,9 +171,20 @@ async def test_user_flow_download_errors(
     assert result["errors"] == {"base": error}
 
 
+@pytest.mark.parametrize("country", ["RU", "BY"])
+async def test_aggressor_instance_cannot_install(
+    hass: HomeAssistant, country: str
+) -> None:
+    """Instances located in aggressor states cannot start the flow."""
+    hass.config.country = country
+    result = await _start(hass)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "unsupported_country"
+
+
 async def test_excluded_country(hass: HomeAssistant, mock_validate: AsyncMock) -> None:
-    """Russia and Belarus are not selectable nor suggested."""
-    hass.config.country = "RU"
+    """Russia and Belarus are not selectable as monitored countries."""
+    hass.config.country = "US"
     result = await _start(hass)
     selector = result["data_schema"].schema[CONF_COUNTRY].config
     assert "RU" not in selector["countries"]

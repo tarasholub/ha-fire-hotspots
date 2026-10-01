@@ -41,7 +41,8 @@
     },
     "abort": {
       "already_configured": "This country is already configured.",
-      "reauth_successful": "MAP_KEY updated."
+      "reauth_successful": "MAP_KEY updated.",
+      "unsupported_country": "Not available on instances located in russia or belarus — aggressor states waging war against Ukraine."
     }
   },
   "options": {

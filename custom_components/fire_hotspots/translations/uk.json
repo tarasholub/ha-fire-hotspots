@@ -41,7 +41,8 @@
     },
     "abort": {
       "already_configured": "Цю країну вже налаштовано.",
-      "reauth_successful": "MAP_KEY оновлено."
+      "reauth_successful": "MAP_KEY оновлено.",
+      "unsupported_country": "Недоступно на інстансах із країною «росія» чи «білорусь» — державами-агресорками у війні проти України."
     }
   },
   "options": {

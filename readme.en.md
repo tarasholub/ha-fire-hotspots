@@ -197,7 +197,8 @@ rolling 24 h). "Whole country" is the sum of its regions. Occupied territories
 of Ukraine are counted within Ukraine.
 
 Russia and Belarus are not supported as aggressor states in the war against
-Ukraine.
+Ukraine: they cannot be monitored, and the integration refuses to install or
+start on Home Assistant instances whose country is set to russia or belarus.
 
 ## Removal
 
