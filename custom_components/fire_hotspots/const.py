@@ -38,6 +38,14 @@ SOURCES: Final = [
     SOURCE_VIIRS_NOAA21,
     SOURCE_MODIS,
 ]
+# Proper nouns, the same in every language; hassfest forbids uppercase
+# translation keys, so the labels live here instead of translations.
+SOURCE_LABELS: Final = {
+    SOURCE_VIIRS_SNPP: "VIIRS S-NPP",
+    SOURCE_VIIRS_NOAA20: "VIIRS NOAA-20",
+    SOURCE_VIIRS_NOAA21: "VIIRS NOAA-21",
+    SOURCE_MODIS: "MODIS (Terra/Aqua)",
+}
 
 CONFIDENCE_LOW: Final = "low"
 CONFIDENCE_NOMINAL: Final = "nominal"

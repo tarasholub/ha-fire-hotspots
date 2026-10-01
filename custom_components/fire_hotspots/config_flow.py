@@ -57,8 +57,8 @@ from .const import (
     MAX_UPDATE_MINUTES,
     MIN_HOURS,
     MIN_UPDATE_MINUTES,
+    SOURCE_LABELS,
     SOURCE_VIIRS_SNPP,
-    SOURCES,
     WHOLE_COUNTRY,
 )
 from .countries import COUNTRIES, EXCLUDED_COUNTRIES, country_name
@@ -312,8 +312,10 @@ class FireHotspotsOptionsFlow(OptionsFlowWithReload):
                 ),
                 vol.Required(CONF_SOURCES): SelectSelector(
                     SelectSelectorConfig(
-                        options=SOURCES,
-                        translation_key=CONF_SOURCES,
+                        options=[
+                            SelectOptionDict(value=source, label=label)
+                            for source, label in SOURCE_LABELS.items()
+                        ],
                         multiple=True,
                         mode=SelectSelectorMode.LIST,
                     )
