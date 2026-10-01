@@ -1,0 +1,15 @@
+# Local Home Assistant for developing this integration.
+# Usage: scripts/docker (or `docker compose up -d`), then http://localhost:8123
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:${HA_VERSION:-2026.9.4}
+    container_name: ha-fire-hotspots
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    environment:
+      TZ: Europe/Kyiv
+    volumes:
+      - ./config:/config
+      # Live code: edit locally, then `docker compose restart`.
+      - ./custom_components/fire_hotspots:/config/custom_components/fire_hotspots:ro
